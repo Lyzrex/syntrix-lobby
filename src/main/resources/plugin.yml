@@ -1,0 +1,68 @@
+name: SyntrixLobby
+main: net.lyzrex.syntrix.lobby.SyntrixLobby
+version: ${version}
+api-version: "1.21"
+softdepend:
+  - LythCore
+author: Lyzrex
+website: https://github.com/lyzrex
+description: Syntrix Lobby plugin
+
+commands:
+  spawn:
+    description: Teleports you to the lobby spawn or toggles auto-join teleport.
+    usage: "/spawn [autojoin|autojoin on|autojoin off]"
+    permission: syntrix.spawn
+  setspawn:
+    description: Sets the lobby spawn to your current location.
+    usage: "/setspawn"
+    permission: syntrix.setspawn
+  lobbyreload:
+    description: Reloads config/messages and refreshes services.
+    usage: "/lobbyreload"
+    permission: syntrix.reload
+  build:
+    description: Toggles build mode (creative, no lobby item enforcement).
+    usage: "/build"
+    permission: syntrix.build
+  playerinfo:
+    description: Shows DB and online status info for a player.
+    usage: "/playerinfo <name>"
+    permission: syntrix.playerinfo
+  skull:
+    description: Gives you the head of a player.
+    usage: "/skull <player> [amount]"
+    permission: syntrix.skull
+  setheight:
+    description: Sets the death height for the height guard.
+    usage: "/setheight [y]"
+    permission: syntrix.setheight
+    aliases: [ sethight ]
+  vanish:
+    description: Toggles vanish (invisible/visible).
+    usage: "/vanish"
+    permission: syntrix.vanish
+  time:
+    description: Controls lobby time (freeze/lock).
+    usage: "/time set <ticks> | /time auto on|off | /time lock <ticks>"
+    permission: syntrix.time
+
+permissions:
+  syntrix.spawn:      { description: Allows /spawn,          default: true }
+  syntrix.setspawn:   { description: Allows /setspawn,       default: op }
+  syntrix.reload:     { description: Allows /lobbyreload,    default: op }
+  syntrix.build:      { description: Allows /build,          default: op }
+  syntrix.playerinfo: { description: Allows /playerinfo,     default: op }
+  syntrix.skull:      { description: Allows /skull,          default: op }
+  syntrix.setheight:  { description: Allows /setheight,      default: op }
+  syntrix.vanish:     { description: Allows /vanish,         default: op }
+  syntrix.time:       { description: Allows /time commands,  default: op }
+
+  syntrix.vanish.see:  { description: See vanished players,     default: op }
+  syntrix.vanish.auto: { description: Auto-vanish on join,      default: op }
+
+  syntrix.chat.hex:     { description: Use hex colors in chat,  default: op }
+  syntrix.signs.color:  { description: Colored/MiniMessage signs, default: op }
+
+  syntrix.vip:           { description: Shown in 'VIP only' mode, default: op }
+  syntrix.hider.exempt:  { description: Never hidden by hider,    default: op }

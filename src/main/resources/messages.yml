@@ -1,0 +1,151 @@
+# ===========================================================
+# Syntrix-Lobby — Messages (EN)
+# ===========================================================
+
+prefix:
+  enabled: true
+  text: '<gradient:#2AF598:#009EFD>Syntrix</gradient> <#8799ae>• '
+
+# ----------------------------------------------------------
+# Build Mode
+# ----------------------------------------------------------
+build:
+  enabled:  '<#8799ae>Build mode <#2AF598>enabled</#2AF598><#8799ae>.'
+  disabled: '<#8799ae>Build mode <#FF4D4F>disabled</#FF4D4F><#8799ae>.'
+  no-permission: '<#FF4D4F>You do not have permission to use build mode.'
+
+# ----------------------------------------------------------
+# Jump and Run
+# ----------------------------------------------------------
+jumpandrun:
+  start:  '<#8799ae>Jump & Run <#2AF598>started</#2AF598><#8799ae>!'
+  cancel: '<#8799ae>Jump & Run <#FF4D4F>canceled</#FF4D4F><#8799ae>.'
+  finish: '<#8799ae>Jump & Run <#2AF598>completed</#2AF598><#8799ae>! <#F6C35D>Congratulations!'
+  no-permission:  '<#FF4D4F>You do not have permission to start Jump & Run.'
+  already-active: '<#8799ae>You <#FF4D4F>already</#FF4D4F><#8799ae> have an active Jump & Run.'
+  step: '<#8799ae>Step <#2AF598>{current}</#2AF598><#8799ae>/<#FFFFFF>{total}'
+  item-name: '<#FFFFFF><bold>🞂 <gradient:#2AF598:#009EFD>Jump & Run</gradient></bold>'
+  item-lore:
+    - '<#8799ae>Right-click to start'
+    - '<#8799ae>a Jump & Run route'
+
+# ----------------------------------------------------------
+# Double Jump
+# ----------------------------------------------------------
+doublejump:
+  cooldown: '<#8799ae>Double jump cooldown: <#FF4D4F>{time}s</#FF4D4F><#8799ae>.'
+
+# ----------------------------------------------------------
+# Navigator
+# ----------------------------------------------------------
+navigator:
+  title: '<gradient:#2AF598:#009EFD>Navigator</gradient>'
+  item-name: '<#FFFFFF><bold>{name}</bold>'
+  item-lore:
+    - '<#8799ae>Right-click to open'
+    - '<#8799ae>the navigator'
+  items:
+    navigator:
+      name: "<#FFFFFF><bold>✦ <gradient:#2AF598:#009EFD>Navigator</gradient></bold>"
+  actionbar: '<#8799ae>Connecting to <#FFFFFF>{server}</#FFFFFF><#8799ae>...'
+
+# ----------------------------------------------------------
+# Vanish
+# ----------------------------------------------------------
+vanish:
+  enabled: '<#8799ae>You are now <green>vanished</green>.'
+  disabled: '<#8799ae>You are now <red>visible</red>.'
+  still-vanished: '<#8799ae>You are still <green>vanished</green>.'
+  private:
+    title: '<gray>Welcome (vanished)</gray>'
+    subtitle: '<#8799ae>You are hidden.</#8799ae>'
+
+# ----------------------------------------------------------
+# Signs
+# ----------------------------------------------------------
+signs:
+  no-permission: '<#FF4D4F>You do not have permission to use colored signs.'
+
+# ----------------------------------------------------------
+# JumpPads
+# ----------------------------------------------------------
+jumppads:
+  launch: '<#8799ae>Wheee! 🚀</#8799ae>'
+
+# ----------------------------------------------------------
+# Player Hider
+# ----------------------------------------------------------
+playerHider:
+  item:
+    name: '<#FFFFFF><bold>👁 <gradient:#2AF598:#009EFD>Player Hider</gradient></bold>'
+    lore:
+      - '<#8799ae>Right-click to choose'
+      - '<#8799ae>who you can see'
+  gui:
+    title: '<gradient:#2AF598:#009EFD>Player Hider</gradient>'
+    all:  '<green>Show everyone</green>'
+    vip:  '<gold>VIP only</gold>'
+    none: '<red>Show no one</red>'
+  set:
+    all:  '<#8799ae>Visibility: <#2AF598>Everyone</#2AF598>'
+    vip:  '<#8799ae>Visibility: <#F6C35D>VIP only</#F6C35D>'
+    none: '<#8799ae>Visibility: <#FF4D4F>No one</#FF4D4F>'
+
+# ----------------------------------------------------------
+# Welcome / Join / Quit
+# ----------------------------------------------------------
+welcome:
+  join: '<#2AF598>[+]</#2AF598> <#FFFFFF>{player}'
+  quit: '<#FF4D4F>[-]</#FF4D4F> <#FFFFFF>{player}'
+  first:
+    toPlayer:  '<gradient:#2AF598:#009EFD>Welcome</gradient> <#FFFFFF>{player} <#8799ae>to the network!'
+    broadcast: '<#F6C35D>Everyone welcome <#FFFFFF>{player}</#FFFFFF> <#F6C35D>!'
+  effects:
+    title:    '<gradient:#4FACFE:#00F2FE>Welcome</gradient>'
+    subtitle: '<#8799ae>to <#FFFFFF>Syntrix</#FFFFFF><#8799ae>!'
+
+# ----------------------------------------------------------
+# Commands
+# ----------------------------------------------------------
+commands:
+  spawn:
+    success:  '<#8799ae>Teleported to <#FFFFFF>spawn</#FFFFFF><#8799ae>.'
+    teleport: '<#8799ae>Teleported to <#FFFFFF>spawn</#FFFFFF><#8799ae>.'
+  setspawn:
+    saved:   '<#2AF598>Spawn set successfully.</#2AF598>'
+    success: '<#2AF598>Spawn set successfully.</#2AF598>'
+  setheight:
+    updated: '<#2AF598>Death height set to</#2AF598> <#FFFFFF>{height}</#FFFFFF><#8799ae>.'
+    killed:  '<#8799ae>You fell below the allowed height.'
+  lobbyreload:
+    reloaded: '<#2AF598>Lobby reloaded successfully</#2AF598> <#8799ae>in <#FFFFFF>{time}ms</#FFFFFF><#8799ae>.'
+    success:  '<#2AF598>Lobby reloaded successfully</#2AF598> <#8799ae>in <#FFFFFF>{time}ms</#FFFFFF><#8799ae>.'
+  playerinfo:
+    header:      '<#F6C35D>— Player Info: <#FFFFFF>{player}</#FFFFFF> —'
+    last-join:   '<#8799ae>Last join:</#8799ae> <#FFFFFF>{time}'
+    total-joins: '<#8799ae>Total joins:</#8799ae> <#FFFFFF>{count}'
+    last-ip:     '<#8799ae>Last IP:</#8799ae> <#FFFFFF>{ip}'
+    alts:        '<#8799ae>Other accounts:</#8799ae> <#FFFFFF>{alts}'
+    uuid:        '<#8799ae>UUID:</#8799ae> <#FFFFFF>{uuid}'
+  time:
+    usage: '<gray>Usage:</gray> <white>/time set <ticks></white> | <white>/time auto on|off</white> | <white>/time lock <ticks></white>'
+    set:
+      ok: '<#2AF598>Time set to <#FFFFFF>{ticks}</#FFFFFF>.</#2AF598>'
+    auto:
+      enabled:  '<#2AF598>Automatic time-lock enabled</#2AF598> <#8799ae>(fixed=<#FFFFFF>{ticks}</#FFFFFF>).'
+      disabled: '<#FF4D4F>Automatic time-lock disabled.</#FF4D4F>'
+    lock:
+      updated: '<#2AF598>Fixed time updated to <#FFFFFF>{ticks}</#FFFFFF> and task restarted.</#2AF598>'
+  skull:
+    display: '<#FFFFFF><bold>Head</bold>'
+    done:    '<#2AF598>Gave <#FFFFFF>{receiver}</#FFFFFF> the head of <#FFFFFF>{name}</#FFFFFF> x{amount}.'
+    error:   '<#FF4D4F>Could not load skin for <#FFFFFF>{name}</#FFFFFF>.'
+
+# ----------------------------------------------------------
+# Errors
+# ----------------------------------------------------------
+errors:
+  no-permission: '<#FF4D4F>You do not have permission to do this.'
+  player-only:   '<#FF4D4F>This command can only be used by players.'
+  not-found:     '<#FF4D4F>Command or player not found.'
+  internal:      '<#FF4D4F>Database error while fetching player info.'
