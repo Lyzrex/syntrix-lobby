@@ -8,6 +8,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class MessageService {
 
+    public static final String DEFAULT_PREFIX = "<gradient:#2AF598:#009EFD>Syntrix</gradient> <#8799ae>• ";
+
     private final SyntrixLobby plugin;
     private final MiniMessage mm = MiniMessage.miniMessage();
 
@@ -16,16 +18,17 @@ public final class MessageService {
     }
 
 
-    public String prefix() {
+    public static String resolvePrefix(SyntrixLobby plugin) {
+        if (plugin == null) return "";
+
         YamlConfiguration cfg = plugin.messages();
-        boolean enabled = cfg.getBoolean("messages.prefix.enabled", true);
-        String pre = cfg.getString(
-                "messages.prefix.text",
-                "<gray>[<gradient:#00ffff:#0080ff>Syntrix</gradient>]</gray> "
-        );
+        boolean enabled = cfg.getBoolean(ConfigKeys.PREFIX_ENABLE, true);
+        String pre = cfg.getString(ConfigKeys.PREFIX_TEXT, DEFAULT_PREFIX);
         return enabled ? pre : "";
     }
-
+    public String prefix() {
+        return resolvePrefix(plugin);
+    }
 
     public void send(CommandSender sender, String msg) {
         String prefix = prefix();

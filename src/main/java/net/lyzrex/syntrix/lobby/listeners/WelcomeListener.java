@@ -6,6 +6,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.title.Title;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.core.MessageService;
 import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -217,11 +218,7 @@ public final class WelcomeListener implements Listener {
 
     private String MessageUtilPrefix() {
 
-        if (!plugin.getConfig().getBoolean("prefix.enabled", true)) return "";
-        return plugin.messages().getString(
-                "prefix.text",
-                "<gradient:#00ffff:#0080ff>Syntrix</gradient> &#8799ae• "
-        );
+        return MessageService.resolvePrefix(plugin);
     }
 
     private void doSpawnTeleportIfEnabled(Player p) {

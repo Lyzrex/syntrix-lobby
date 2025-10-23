@@ -130,7 +130,16 @@ commands:
   setspawn:    { enabled: true, permission: syntrix.setspawn }
   lobbyreload: { enabled: true, permission: syntrix.reload }
   build:       { enabled: true, permission: syntrix.build }
-  playerinfo:  { enabled: true, permission: syntrix.playerinfo }
+
+  playerinfo:
+    enabled: true
+    permission: syntrix.playerinfo
+    ip-history-permission: ''   # optional override for /playerinfo ip
+    time-format: 'dd.MM.yyyy HH:mm:ss'
+    timezone: 'Europe/Berlin'   # leave empty to use the system default zone
+    max-alt-results: 5
+    ip-history-limit: 20
+
   setheight:   { enabled: true, permission: syntrix.setheight }
   skull:       { enabled: true, permission: syntrix.skull }
   time:        { enabled: true, permission: syntrix.time }
@@ -145,7 +154,7 @@ mysql:
   database: "Your Database"
   user: "Your User"
   password: "Your Password"
-  useSSL: false ("If database is not used, true, otherwise false")
+  useSSL: false # Set to true only when your database requires SSL
 
 # ----------------------------------------------------------
 # Zeitsteuerung (TimeKeeperTask)
