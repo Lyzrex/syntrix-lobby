@@ -32,14 +32,18 @@ public final class LobbyReloadCommand extends BaseCommand {
             return true;
         }
 
-        long start = System.currentTimeMillis();
-        plugin.reloadAll();
-        long duration = System.currentTimeMillis() - start;
+        long duration = plugin.reloadAll();
 
         String msg = plugin.messages().getString(
                 "commands.lobbyreload.reloaded",
-                "<green>SyntrixLobby reloaded in <white><bold>%ms%</bold></white> ms.</green>"
-        ).replace("%ms%", String.valueOf(duration));
+                "<#2AF598>Lobby reloaded successfully</#2AF598> <#8799ae>in <#FFFFFF>{time}ms</#FFFFFF><#8799ae>."
+        );
+
+        if (msg != null) {
+            msg = msg
+                    .replace("{time}", String.valueOf(duration))
+                    .replace("%ms%", String.valueOf(duration));
+        }
 
         ms.send(sender, msg);
         return true;

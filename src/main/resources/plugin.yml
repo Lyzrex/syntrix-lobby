@@ -26,9 +26,10 @@ commands:
     usage: "/build"
     permission: syntrix.build
   playerinfo:
-    description: Shows DB and online status info for a player.
-    usage: "/playerinfo <name>"
+    description: Shows database, status, and account history for a player.
+    usage: "/playerinfo <name> | /playerinfo ip <name>"
     permission: syntrix.playerinfo
+    aliases: [userinfo]
   skull:
     description: Gives you the head of a player.
     usage: "/skull <player> [amount]"

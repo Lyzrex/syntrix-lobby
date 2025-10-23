@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby.utils;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.core.MessageService;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -14,12 +15,7 @@ public final class MessageUtil {
     private MessageUtil() {}
 
     private static String prefix(SyntrixLobby plugin) {
-        boolean enabled = plugin.messages().getBoolean("prefix.enabled", true);
-        if (!enabled) return "";
-        return plugin.messages().getString(
-                "prefix.text",
-                "<gradient:#00ffff:#0080ff>Syntrix</gradient> &#8799ae• "
-        );
+        return MessageService.resolvePrefix(plugin);
     }
 
     public static void send(CommandSender sender, SyntrixLobby plugin, String path, String def) {

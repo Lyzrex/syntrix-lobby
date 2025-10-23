@@ -117,7 +117,9 @@ public final class SyntrixLobby extends JavaPlugin {
         }
     }
 
-    public void reloadAll() {
+    public long reloadAll() {
+        long start = System.currentTimeMillis();
+
         super.reloadConfig();
         this.config = super.getConfig();
 
@@ -135,6 +137,9 @@ public final class SyntrixLobby extends JavaPlugin {
 
         restartTimeControl();
         restartSpawnParticles();
+
+
+        return System.currentTimeMillis() - start;
     }
 
 

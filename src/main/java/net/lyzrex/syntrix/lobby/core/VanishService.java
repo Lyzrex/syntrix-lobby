@@ -28,6 +28,10 @@ public final class VanishService {
 
 
     public void init() {
+        if (!db.isEnabled()) {
+            plugin.getLogger().info("[Vanish] Skipping database-backed vanish cache because MySQL is disabled.");
+            return;
+        }
         try (Connection c = db.getConnection();
              PreparedStatement st = c.prepareStatement(
                      "CREATE TABLE IF NOT EXISTS syntrix_vanish (" +

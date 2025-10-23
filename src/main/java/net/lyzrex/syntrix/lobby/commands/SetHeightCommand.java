@@ -14,13 +14,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Collections;
 import java.util.List;
 
-public final class SetHightCommand implements TabExecutor {
+public final class SetHeightCommand implements TabExecutor {
 
     private final SyntrixLobby plugin;
     private final MessageService ms;
     private final MiniMessage mm = MiniMessage.miniMessage();
 
-    public SetHightCommand(SyntrixLobby plugin) {
+    public SetHeightCommand(SyntrixLobby plugin) {
         this.plugin = plugin;
         this.ms = new MessageService(plugin);
 
