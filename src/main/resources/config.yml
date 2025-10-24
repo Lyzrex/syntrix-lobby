@@ -131,14 +131,20 @@ commands:
   lobbyreload: { enabled: true, permission: syntrix.reload }
   build:       { enabled: true, permission: syntrix.build }
 
-  playerinfo:
-    enabled: true
-    permission: syntrix.playerinfo
-    ip-history-permission: ''   # optional override for /playerinfo ip
-    time-format: 'dd.MM.yyyy HH:mm:ss'
-    timezone: 'Europe/Berlin'   # leave empty to use the system default zone
-    max-alt-results: 5
-    ip-history-limit: 20
+playerinfo:
+  enabled: true
+  permission: syntrix.playerinfo
+  ip-history-permission: ''   # optional override for /playerinfo ip
+  time-format: 'dd.MM.yyyy HH:mm:ss'
+  timezone: 'Europe/Berlin'   # leave empty to use the system default zone (also controls login streak day changes)
+  max-alt-results: 5
+  ip-history-limit: 20
+  afk-threshold-seconds: 120  # players are considered AFK after this many seconds without activity
+  heatmap:
+    days: 30           # how many days of session history to analyse for the login heatmap
+    summary-count: 4   # number of time windows to show in the condensed summary
+    max-rows: 256      # maximum amount of session rows to fetch per player
+    detail-per-day: 3  # how many time windows to list per day in the hover details
 
   setheight:   { enabled: true, permission: syntrix.setheight }
   skull:       { enabled: true, permission: syntrix.skull }
@@ -155,6 +161,12 @@ mysql:
   user: "Your User"
   password: "Your Password"
   useSSL: false # Set to true only when your database requires SSL
+  dialect: auto # auto/mysql/mariadb - choose which JDBC driver should be used
+  server-timezone: UTC # Leave empty to skip forcing the driver timezone hint
+  jdbc-url: "" # Optional advanced override. When set, host/port/database are ignored.
+  connection-properties: {} # Optional extra JDBC URL parameters (key: value)
+  # Falls die Datenbank nicht existiert wird sie automatisch erstellt (sofern möglich und jdbc-url leer ist)
+  # Hinweis: Der MySQL-User muss Rechte auf die Datenbank haben (GRANT ALL ON `datenbank`.* TO 'user'@'host';)
 
 # ----------------------------------------------------------
 # Zeitsteuerung (TimeKeeperTask)

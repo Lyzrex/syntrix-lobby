@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
+import net.lyzrex.syntrix.lobby.core.PlayerSessionService;
 import net.lyzrex.syntrix.lobby.core.VanishService;
 import net.lyzrex.syntrix.lobby.db.DBManager;
 import net.lyzrex.syntrix.lobby.manager.CommandManager;
@@ -47,10 +48,12 @@ public final class SyntrixLobby extends JavaPlugin {
     private DBManager db;
     private VanishService vanish;
     private PlayerHiderService playerHider;
+    private PlayerSessionService sessions;
 
     public DBManager db()                { return db; }
     public VanishService vanish()        { return vanish; }
     public PlayerHiderService playerHider() { return playerHider; }
+    public PlayerSessionService sessions() { return sessions; }
     @Override public FileConfiguration getConfig() { return config; }
     public YamlConfiguration messages()  { return messages; }
 
@@ -70,6 +73,8 @@ public final class SyntrixLobby extends JavaPlugin {
 
         this.playerHider = new PlayerHiderService(this);
 
+        this.sessions = new PlayerSessionService(this);
+        this.sessions.init();
 
         ListenerManager.registerAll(this);
         CommandManager.registerAll(this);
@@ -85,6 +90,8 @@ public final class SyntrixLobby extends JavaPlugin {
     public void onDisable() {
         if (timeTaskId != -1)     Bukkit.getScheduler().cancelTask(timeTaskId);
         if (particleTaskId != -1) Bukkit.getScheduler().cancelTask(particleTaskId);
+
+        if (sessions != null)     sessions.shutdown();
         timeTaskId = -1;
         particleTaskId = -1;
         getLogger().info("Syntrix-Lobby disabled.");
@@ -133,6 +140,8 @@ public final class SyntrixLobby extends JavaPlugin {
 
         if (this.vanish != null)      this.vanish.refreshAll();
         if (this.playerHider != null) this.playerHider.refreshAll();
+        if (this.sessions != null)    this.sessions.refreshAll();
+
 
 
         restartTimeControl();

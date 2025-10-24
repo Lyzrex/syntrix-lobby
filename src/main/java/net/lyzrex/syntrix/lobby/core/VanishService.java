@@ -28,10 +28,12 @@ public final class VanishService {
 
 
     public void init() {
+
         if (!db.isEnabled()) {
             plugin.getLogger().info("[Vanish] Skipping database-backed vanish cache because MySQL is disabled.");
             return;
         }
+
         try (Connection c = db.getConnection();
              PreparedStatement st = c.prepareStatement(
                      "CREATE TABLE IF NOT EXISTS syntrix_vanish (" +
@@ -68,15 +70,17 @@ public final class VanishService {
     public void setVanished(UUID id, boolean state) {
         if (state) vanished.add(id); else vanished.remove(id);
 
-        try (Connection c = db.getConnection();
-             PreparedStatement st = c.prepareStatement(
-                     "INSERT INTO syntrix_vanish (uuid, vanished) VALUES(?,?) " +
-                             "ON DUPLICATE KEY UPDATE vanished=VALUES(vanished)")) {
-            st.setBytes(1, db.toBytes(id));
-            st.setBoolean(2, state);
-            st.executeUpdate();
-        } catch (SQLException ex) {
-            plugin.getLogger().severe("Failed to write vanish state: " + ex.getMessage());
+        if (db.isEnabled()) {
+            try (Connection c = db.getConnection();
+                 PreparedStatement st = c.prepareStatement(
+                         "INSERT INTO syntrix_vanish (uuid, vanished) VALUES(?,?) " +
+                                 "ON DUPLICATE KEY UPDATE vanished=VALUES(vanished)")) {
+                st.setBytes(1, db.toBytes(id));
+                st.setBoolean(2, state);
+                st.executeUpdate();
+            } catch (SQLException ex) {
+                plugin.getLogger().severe("Failed to write vanish state: " + ex.getMessage());
+            }
         }
 
         Player p = Bukkit.getPlayer(id);

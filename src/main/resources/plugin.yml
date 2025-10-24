@@ -26,8 +26,8 @@ commands:
     usage: "/build"
     permission: syntrix.build
   playerinfo:
-    description: Shows database, status, and account history for a player.
-    usage: "/playerinfo <name> | /playerinfo ip <name>"
+    description: Shows database, status, and account history for a player or ID.
+    usage: "/playerinfo <player|#id|id <id>> | /playerinfo ip <player|#id|id <id>>"
     permission: syntrix.playerinfo
     aliases: [userinfo]
   skull:
