@@ -3,6 +3,7 @@ package net.lyzrex.syntrix.lobby.listeners;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
+import net.lyzrex.syntrix.lobby.db.DBManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -33,6 +34,10 @@ public final class PlayerJoinListener implements Listener {
         Player p = e.getPlayer();
         FileConfiguration cfg = plugin.getConfig();
 
+        DBManager.SessionStart sessionStart = null;
+        if (plugin.sessions() != null) {
+            sessionStart = plugin.sessions().startSession(p);
+        }
 
         if (plugin.db() != null && plugin.db().isEnabled()) {
             String ip = "unknown";
@@ -43,10 +48,13 @@ public final class PlayerJoinListener implements Listener {
                 }
             } catch (Throwable ignored) {}
             final String ipFinal = ip;
+            final DBManager.SessionStart startCopy = sessionStart;
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin,
-                    () -> plugin.db().markJoin(p.getUniqueId(), p.getName(), ipFinal));
+                    () -> {
+                        plugin.db().markJoin(p.getUniqueId(), p.getName(), ipFinal);
+                        plugin.db().beginSession(p.getUniqueId(), startCopy);
+                    });
         }
-
 
         if (plugin.vanish() != null && cfg.getBoolean("vanish.enabled", true)) {
             plugin.vanish().applyVisibilityForViewer(p);
@@ -84,10 +92,19 @@ public final class PlayerJoinListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        DBManager.SessionCompletion completion = null;
+        if (plugin.sessions() != null) {
+            completion = plugin.sessions().finishSession(p);
+        }
         if (plugin.db() == null || !plugin.db().isEnabled()) return;
-        var p = e.getPlayer();
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin,
-                () -> plugin.db().markQuit(p.getUniqueId()));
+        final DBManager.SessionCompletion completionCopy = completion;
+        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+            plugin.db().markQuit(p.getUniqueId());
+            if (completionCopy != null) {
+                plugin.db().completeSession(p.getUniqueId(), completionCopy);
+            }
+        });
     }
 
 

@@ -23,6 +23,7 @@ public final class ListenerManager {
         pm.registerEvents(new DoubleJumpListener(plugin), plugin);
         pm.registerEvents(new HeightGuardListener(plugin), plugin);
         pm.registerEvents(new SignColorListener(plugin), plugin);
+        pm.registerEvents(new PlayerTelemetryListener(plugin), plugin);
 
     }
 }
