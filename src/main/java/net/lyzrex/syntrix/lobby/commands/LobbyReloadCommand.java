@@ -24,7 +24,7 @@ public final class LobbyReloadCommand extends BaseCommand {
 
         if (!plugin.getConfig().getBoolean("commands.lobbyreload.enabled", true)) return true;
 
-        // permission
+
         final String perm = plugin.getConfig().getString("commands.lobbyreload.permission", "syntrix.reload");
         if (!sender.hasPermission(perm)) {
             ms.send(sender, plugin.messages().getString("general.no-permission",

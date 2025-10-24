@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/** Doppel-Sprung mit Cooldown + Prefix-Nachricht. */
 public final class DoubleJumpListener implements Listener {
 
     private final SyntrixLobby plugin;
@@ -85,8 +84,8 @@ public final class DoubleJumpListener implements Listener {
     public void onToggleFlight(PlayerToggleFlightEvent e) {
         Player p = e.getPlayer();
         if (!canUse(p)) return;
-        if (!e.isFlying()) return;          // nur Start abfangen
-        e.setCancelled(true);               // Vanilla-Fliegen verhindern
+        if (!e.isFlying()) return;
+        e.setCancelled(true);
 
         long now = System.currentTimeMillis();
         long until = cooldownUntil.getOrDefault(p.getUniqueId(), 0L);
@@ -96,8 +95,8 @@ public final class DoubleJumpListener implements Listener {
             return;
         }
 
-        // Jump-Boost
-        p.setAllowFlight(false);            // wird am Boden wieder erlaubt
+
+        p.setAllowFlight(false);
         var dir = p.getLocation().getDirection().normalize();
         double up = 0.55D;
         double forward = 1.10D;
