@@ -31,7 +31,7 @@ protections:
   block-pvp: true
   block-doors: true
   block-trapdoors: true
-  block-fence-gates: true     # <- wichtig: so erwartet vom Listener
+  block-fence-gates: true
   block-hoppers: true
   block-barrels: true
   block-flower-pots: true
@@ -39,7 +39,7 @@ protections:
   block-jukebox: true
   protect-farmland: true
   no-hunger: true
-  deathHeight: -64            # nur falls du die externe HeightGuard-Variante nutzt
+  deathHeight: -64
 
 # ----------------------------------------------------------
 # Chat — HexColor & (optional) MiniMessage im Chat
@@ -162,21 +162,20 @@ mysql:
   password: "Your Password"
   useSSL: false # Set to true only when your database requires SSL
   dialect: auto # auto/mysql/mariadb - choose which JDBC driver should be used
-  server-timezone: UTC # Leave empty to skip forcing the driver timezone hint
-  jdbc-url: "" # Optional advanced override. When set, host/port/database are ignored.
-  connection-properties: {} # Optional extra JDBC URL parameters (key: value)
-  # Falls die Datenbank nicht existiert wird sie automatisch erstellt (sofern möglich und jdbc-url leer ist)
-  # Hinweis: Der MySQL-User muss Rechte auf die Datenbank haben (GRANT ALL ON `datenbank`.* TO 'user'@'host';)
+  server-timezone: UTC
+  jdbc-url: ""
+  connection-properties: {}
+
 
 # ----------------------------------------------------------
 # Zeitsteuerung (TimeKeeperTask)
 # ----------------------------------------------------------
 timeControl:
   enabled: true
-  world: ""            # leer => nutzt lobby.world
+  world: ""
   fixed-time: 1000
   intervalTicks: 200
-  freeze: true         # setzt doDaylightCycle=false
+  freeze: true
 
 # ----------------------------------------------------------
 # Partikel-Ring am Spawn (SpawnParticleRingTask)

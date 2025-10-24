@@ -111,7 +111,7 @@ public final class PlayerJoinListener implements Listener {
     public static void giveLobbyLoadout(SyntrixLobby plugin, Player p) {
         PlayerInventory inv = p.getInventory();
 
-        // Navigator
+
         if (plugin.getConfig().getBoolean("navigator.enabled", true)) {
             String matName = plugin.getConfig().getString("navigator.trigger.material", "COMPASS");
             int slot = clamp(plugin.getConfig().getInt("navigator.trigger.slot", 4));
