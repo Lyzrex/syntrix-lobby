@@ -115,6 +115,18 @@ doublejump:
   pitch: 1.2
 
 # ----------------------------------------------------------
+# Flight
+# ----------------------------------------------------------
+fly:
+  enabled: true
+  permission: syntrix.fly
+  others-permission: syntrix.fly.others
+  messages: true
+  auto-on-join:
+    enabled: true
+    permission: syntrix.fly.auto
+
+# ----------------------------------------------------------
 # Build Mode
 # ----------------------------------------------------------
 build:
@@ -165,10 +177,13 @@ mysql:
   server-timezone: UTC
   jdbc-url: ""
   connection-properties: {}
+  pool:
+    max-size: 8
+    borrow-timeout: 5000 # milliseconds to wait for a free connection before failing
 
 
 # ----------------------------------------------------------
-# Zeitsteuerung (TimeKeeperTask)
+# TimeKeeperTask
 # ----------------------------------------------------------
 timeControl:
   enabled: true
@@ -176,6 +191,16 @@ timeControl:
   fixed-time: 1000
   intervalTicks: 200
   freeze: true
+
+  # ----------------------------------------------------------
+  # Weather
+  # ----------------------------------------------------------
+  weatherControl:
+    enabled: true
+    world: ""
+    intervalTicks: 200
+    lock-sun: true
+
 
 # ----------------------------------------------------------
 # Partikel-Ring am Spawn (SpawnParticleRingTask)
@@ -194,6 +219,23 @@ player-data:
   enabled: true
   folder: player-data
   track-last-quit: true
+
+
+# ----------------------------------------------------------
+# Death Logging
+# ----------------------------------------------------------
+deathLogs:
+  enabled: true
+  time-format: 'yyyy-MM-dd HH:mm:ss'
+  coordinate-precision: 1
+  console:
+    enabled: true
+    format: '[Death] {time} {player} died in {world} at {x}, {y}, {z} ({cause})'
+  chat:
+    enabled: true
+    permission: ''
+    message: '<gray>[Death]</gray> <red>{player}</red> <gray>starb bei</gray> <yellow>{x}</yellow> <gray>, {y}, {z}</gray> <gray>in {world}</gray> <gray>({time})</gray>'
+
 
 # ----------------------------------------------------------
 # Skull System
@@ -350,4 +392,34 @@ gadgets:
     sound: ENTITY_SNOWBALL_THROW
   hook:
     pull: { power: 1.4, maxY: 0.7 }
-    sound: ENTITY_FISHING_BOBBER_THROW
+  sound: ENTITY_FISHING_BOBBER_THROW
+
+# ----------------------------------------------------------
+# Items
+# ----------------------------------------------------------
+items:
+  jumpAndRun:
+    enabled: true
+    permission: ''
+    slot: 1
+    activator-material: SLIME_BALL
+    block-material: LIGHT_BLUE_STAINED_GLASS
+    steps: 40
+    cancel-fall-below: 1.5
+    checkpoints: [1, 15, 25]
+    difficulties:
+      easy:   { range: [1, 12],  distance: 1.8, height: 0.7 }
+      medium: { range: [15, 24], distance: 2.4, height: 0.8 }
+      hard:   { range: [25, 40], distance: 3.3, height: 0.9 }
+    sounds:
+      start: block.note_block.pling
+      step: block.note_block.hat
+      finish: ui.toast.challenge_complete
+      cancel: entity.armor_stand.break
+      checkpoint: block.note_block.bell
+      fail: entity.villager.no
+      volume: 1.5
+      pitch: 1.5
+    leaderboard:
+      permission: syntrix.jumpandrun.hologram
+      spacing: 0.3

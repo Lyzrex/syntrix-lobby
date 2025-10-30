@@ -1,6 +1,7 @@
 package net.lyzrex.syntrix.lobby;
 
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.lyzrex.syntrix.lobby.core.DeathLogService;
+import net.lyzrex.syntrix.lobby.core.JumpAndRunService;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
 import net.lyzrex.syntrix.lobby.core.PlayerSessionService;
 import net.lyzrex.syntrix.lobby.core.VanishService;
@@ -15,6 +16,7 @@ import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -38,24 +40,50 @@ public final class SyntrixLobby extends JavaPlugin {
     private YamlConfiguration messages;
 
 
-    private int timeTaskId     = -1;
-    private int particleTaskId = -1;
-
-    @SuppressWarnings("FieldCanBeLocal")
-    private final MiniMessage mm = MiniMessage.miniMessage();
+    private BukkitTask timeTask;
+    private BukkitTask particleTask;
+    private BukkitTask weatherTask;
 
 
     private DBManager db;
     private VanishService vanish;
     private PlayerHiderService playerHider;
     private PlayerSessionService sessions;
+    private DeathLogService deathLogs;
+    private JumpAndRunService jumpAndRun;
 
-    public DBManager db()                { return db; }
-    public VanishService vanish()        { return vanish; }
-    public PlayerHiderService playerHider() { return playerHider; }
-    public PlayerSessionService sessions() { return sessions; }
-    @Override public FileConfiguration getConfig() { return config; }
-    public YamlConfiguration messages()  { return messages; }
+    public DBManager db() {
+        return db;
+    }
+
+    public VanishService vanish() {
+        return vanish;
+    }
+
+    public PlayerHiderService playerHider() {
+        return playerHider;
+    }
+
+    public PlayerSessionService sessions() {
+        return sessions;
+    }
+
+    public DeathLogService deathLogs() {
+        return deathLogs;
+    }
+
+    public JumpAndRunService jumpAndRun() {
+        return jumpAndRun;
+    }
+
+    @Override
+    public FileConfiguration getConfig() {
+        return config;
+    }
+
+    public YamlConfiguration messages() {
+        return messages;
+    }
 
 
     @Override
@@ -76,36 +104,48 @@ public final class SyntrixLobby extends JavaPlugin {
         this.sessions = new PlayerSessionService(this);
         this.sessions.init();
 
+        this.deathLogs = new DeathLogService(this);
+        this.deathLogs.init();
+
+        this.jumpAndRun = new JumpAndRunService(this);
+        this.jumpAndRun.init();
+
         ListenerManager.registerAll(this);
         CommandManager.registerAll(this);
 
 
         startTimeControl();
         startSpawnParticles();
+        startWeatherControl();
 
         getLogger().info("Syntrix-Lobby enabled.");
     }
 
     @Override
     public void onDisable() {
-        if (timeTaskId != -1)     Bukkit.getScheduler().cancelTask(timeTaskId);
-        if (particleTaskId != -1) Bukkit.getScheduler().cancelTask(particleTaskId);
+        cancelTask(timeTask);
+        cancelTask(particleTask);
+        cancelTask(weatherTask);
 
-        if (sessions != null)     sessions.shutdown();
-        timeTaskId = -1;
-        particleTaskId = -1;
+        if (sessions != null) sessions.shutdown();
+        if (deathLogs != null) deathLogs.shutdown();
+        if (jumpAndRun != null) jumpAndRun.shutdown();
+        if (db != null) db.shutdown();
+        timeTask = null;
+        particleTask = null;
+        weatherTask = null;
         getLogger().info("Syntrix-Lobby disabled.");
     }
 
 
     private void initKeys() {
-        ITEM_LOCK    = new NamespacedKey(this, "item_lock");
-        NAV_TAG      = new NamespacedKey(this, "nav_trigger");
-        NAV_SERVER   = new NamespacedKey(this, "nav_server");
-        SILENT_TOG   = new NamespacedKey(this, "silent_toggle");
-        JNR_ACTIVE   = new NamespacedKey(this, "jnr_trigger");
+        ITEM_LOCK = new NamespacedKey(this, "item_lock");
+        NAV_TAG = new NamespacedKey(this, "nav_trigger");
+        NAV_SERVER = new NamespacedKey(this, "nav_server");
+        SILENT_TOG = new NamespacedKey(this, "silent_toggle");
+        JNR_ACTIVE = new NamespacedKey(this, "jnr_trigger");
         AUTOJOIN_OFF = new NamespacedKey(this, "autojoin_off");
-        BUILD_MODE   = new NamespacedKey(this, "build_mode");
+        BUILD_MODE = new NamespacedKey(this, "build_mode");
     }
 
     private void setupConfig() {
@@ -134,18 +174,26 @@ public final class SyntrixLobby extends JavaPlugin {
         setupMessages();
 
 
-        if (this.db == null) this.db = new DBManager(this);
+        if (this.db == null) {
+            this.db = new DBManager(this);
+        } else {
+            this.db.shutdown();
+        }
         this.db.init();
 
 
-        if (this.vanish != null)      this.vanish.refreshAll();
+        if (this.vanish != null) this.vanish.refreshAll();
         if (this.playerHider != null) this.playerHider.refreshAll();
-        if (this.sessions != null)    this.sessions.refreshAll();
-
+        if (this.sessions != null) this.sessions.refreshAll();
+        if (this.deathLogs == null) this.deathLogs = new DeathLogService(this);
+        this.deathLogs.reload();
+        if (this.jumpAndRun == null) this.jumpAndRun = new JumpAndRunService(this);
+        this.jumpAndRun.reload();
 
 
         restartTimeControl();
         restartSpawnParticles();
+        restartWeatherControl();
 
 
         return System.currentTimeMillis() - start;
@@ -153,10 +201,11 @@ public final class SyntrixLobby extends JavaPlugin {
 
 
     public void startTimeControl() {
+        cancelTask(timeTask);
         if (!config.getBoolean("timeControl.enabled", true)) return;
 
-        final long interval   = config.getLong("timeControl.intervalTicks", 200L);
-        final long fixed      = config.getLong("timeControl.fixed-time", 1000L);
+        final long interval = config.getLong("timeControl.intervalTicks", 200L);
+        final long fixed = config.getLong("timeControl.fixed-time", 1000L);
         final String worldCfg = config.getString("timeControl.world", "");
 
         Runnable job = () -> {
@@ -166,17 +215,16 @@ public final class SyntrixLobby extends JavaPlugin {
             if (w != null && w.getTime() != fixed) w.setTime(fixed);
         };
 
-        timeTaskId = Bukkit.getScheduler()
-                .scheduleSyncRepeatingTask(this, job, 20L, Math.max(1L, interval));
+        timeTask = Bukkit.getScheduler()
+                .runTaskTimer(this, job, 20L, Math.max(1L, interval));
     }
 
     public void restartTimeControl() {
-        if (timeTaskId != -1) Bukkit.getScheduler().cancelTask(timeTaskId);
-        timeTaskId = -1;
         startTimeControl();
     }
 
     public void startSpawnParticles() {
+        cancelTask(particleTask);
         if (!config.getBoolean("spawnParticles.enabled", true)) return;
 
         final String worldName = config.getString("lobby.world", "world");
@@ -193,16 +241,16 @@ public final class SyntrixLobby extends JavaPlugin {
         }
 
         final double radius = config.getDouble("spawnParticles.radius", 2.5);
-        final int points    = Math.max(8, config.getInt("spawnParticles.points", 60));
+        final int points = Math.max(8, config.getInt("spawnParticles.points", 60));
         final long interval = Math.max(1L, config.getLong("spawnParticles.intervalTicks", 5));
-        final double x      = config.getDouble("lobby.spawn.x", 0.5);
-        final double y      = config.getDouble("lobby.spawn.y", 80.0);
-        final double z      = config.getDouble("lobby.spawn.z", 0.5);
+        final double x = config.getDouble("lobby.spawn.x", 0.5);
+        final double y = config.getDouble("lobby.spawn.y", 80.0);
+        final double z = config.getDouble("lobby.spawn.z", 0.5);
 
 
         final Particle type = particleType;
 
-        particleTaskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
+        particleTask = Bukkit.getScheduler().runTaskTimer(this, () -> {
             final double cy = y + 0.1;
             final double cx = x;
             final double cz = z;
@@ -217,8 +265,47 @@ public final class SyntrixLobby extends JavaPlugin {
     }
 
     private void restartSpawnParticles() {
-        if (particleTaskId != -1) Bukkit.getScheduler().cancelTask(particleTaskId);
-        particleTaskId = -1;
+
         startSpawnParticles();
+    }
+
+    public void startWeatherControl() {
+        cancelTask(weatherTask);
+        if (!config.getBoolean("weatherControl.enabled", true)) {
+            return;
+        }
+        final long interval = Math.max(1L, config.getLong("weatherControl.intervalTicks", 200L));
+        final String configuredWorld = config.getString("weatherControl.world", "");
+        Runnable job = () -> {
+            String worldName = (configuredWorld == null || configuredWorld.isBlank())
+                    ? config.getString("lobby.world", "world")
+                    : configuredWorld;
+            World world = Bukkit.getWorld(worldName);
+            if (world == null) {
+                return;
+            }
+            if (config.getBoolean("weatherControl.lock-sun", true)) {
+                if (world.hasStorm()) {
+                    world.setStorm(false);
+                }
+                if (world.isThundering()) {
+                    world.setThundering(false);
+                }
+                world.setWeatherDuration(0);
+                world.setThunderDuration(0);
+            }
+        };
+        weatherTask = Bukkit.getScheduler()
+                .runTaskTimer(this, job, 20L, interval);
+    }
+
+    public void restartWeatherControl() {
+        startWeatherControl();
+    }
+
+    private void cancelTask(BukkitTask task) {
+        if (task != null) {
+            task.cancel();
+        }
     }
 }

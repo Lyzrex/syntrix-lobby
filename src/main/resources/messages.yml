@@ -20,14 +20,39 @@ build:
 jumpandrun:
   start: '<#8799ae>Jump & Run <#2AF598>started</#2AF598><#8799ae>!'
   cancel: '<#8799ae>Jump & Run <#FF4D4F>canceled</#FF4D4F><#8799ae>.'
-  finish: '<#8799ae>Jump & Run <#2AF598>completed</#2AF598><#8799ae>! <#F6C35D>Congratulations!'
+  finish: '<#8799ae>Jump & Run <#2AF598>completed</#2AF598><#8799ae> in <#FFFFFF>{time}</#FFFFFF>! <#F6C35D>Congratulations!'
   no-permission: '<#FF4D4F>You do not have permission to start Jump & Run.'
   already-active: '<#8799ae>You <#FF4D4F>already</#FF4D4F><#8799ae> have an active Jump & Run.'
   step: '<#8799ae>Step <#2AF598>{current}</#2AF598><#8799ae>/<#FFFFFF>{total}'
+  reset: '<#FF4D4F>You fell!</#FF4D4F> <#8799ae>Teleporting to the last checkpoint.</#8799ae>'
+  checkpoint: '<#2AF598>Checkpoint reached:</#2AF598> <#FFFFFF>{current}</#FFFFFF>/<#FFFFFF>{total}</#FFFFFF>'
+  new-record: '<#F6C35D>New personal best!</#F6C35D>'
   item-name: '<#FFFFFF><bold>🞂 <gradient:#2AF598:#009EFD>Jump & Run</gradient></bold>'
   item-lore:
     - '<#8799ae>Right-click to start'
     - '<#8799ae>a Jump & Run route'
+  leaderboard:
+    title: '<gradient:#2AF598:#009EFD><bold>Jump & Run • Top 10</bold></gradient>'
+    line: '<#8799ae>{pos}. <#FFFFFF>{player}</#FFFFFF> <#8799ae>- {time}'
+    empty: '<#8799ae>No runs recorded yet.</#8799ae>'
+
+
+# ----------------------------------------------------------
+# Fly Command
+# ----------------------------------------------------------
+fly:
+  enabled: '<#2AF598>Flight enabled.</#2AF598>'
+  disabled: '<#FF4D4F>Flight disabled.</#FF4D4F>'
+  target-enabled: '<#2AF598>Flight enabled for <#FFFFFF>{player}</#FFFFFF>.</#2AF598>'
+  target-disabled: '<#FF4D4F>Flight disabled for <#FFFFFF>{player}</#FFFFFF>.</#FF4D4F>'
+  disabled-command: '<#FF4D4F>The fly command is currently disabled.</#FF4D4F>'
+  not-player: '<#FF4D4F>Only players can toggle their own flight.</#FF4D4F>'
+  offline: '<#FF4D4F>That player is not online.</#FF4D4F>'
+  no-permission: '<#FF4D4F>You do not have permission to fly.</#FF4D4F>'
+  no-permission-others: '<#FF4D4F>You do not have permission to change other players'' flight.</#FF4D4F>'
+  creative: '<#FF4D4F>You cannot disable flight for creative or spectator players.</#FF4D4F>'
+  usage: '<gray>Usage:</gray> <white>/fly [player] [on|off|toggle]</white>'
+  auto-enabled: '<#8799ae>Flight enabled automatically.</#8799ae>'
 
 # ----------------------------------------------------------
 # Double Jump
@@ -120,6 +145,14 @@ commands:
   lobbyreload:
     reloaded: '<#2AF598>Lobby reloaded successfully</#2AF598> <#8799ae>in <#FFFFFF>{time}ms</#FFFFFF><#8799ae>.'
     success: '<#2AF598>Lobby reloaded successfully</#2AF598> <#8799ae>in <#FFFFFF>{time}ms</#FFFFFF><#8799ae>.'
+  leaderboard:
+    commands:
+      usage: '<gray>Usage:</gray> <white>/jumpandrunholo <spawn|remove|update></white>'
+      created: '<#2AF598>Jump & Run hologram spawned.</#2AF598>'
+      removed: '<#FF4D4F>Jump & Run hologram removed.</#FF4D4F>'
+      updated: '<#2AF598>Jump & Run hologram updated.</#2AF598>'
+      no-permission: '<#FF4D4F>You do not have permission to manage the leaderboard hologram.</#FF4D4F>'
+      player-only: '<#FF4D4F>Only players can perform this action.</#FF4D4F>'
 
 
   playerinfo:
@@ -153,14 +186,8 @@ commands:
         client: '  <#8799ae>Client:</#8799ae> <#FFFFFF>{client_version}</#FFFFFF> <#8799ae>(Protocol {client_protocol} • {client_platform})</#8799ae>'
         brand: '  <#8799ae>Brand:</#8799ae> <#FFFFFF>{client_brand}</#FFFFFF>'
         mods: '  <#8799ae>Mods:</#8799ae> <#FFFFFF>{client_mods}</#FFFFFF>'
-      location:
-        title: '<gradient:#04c3e0:#0a92f1><bold>Positionen</bold></gradient>'
-        current: '  <#8799ae>Aktuell:</#8799ae> <#FFFFFF>{location_current}</#FFFFFF>'
-        previous: '  <#8799ae>Letzte:</#8799ae> <#FFFFFF>{location_last}</#FFFFFF>'
-        death: '  <#8799ae>Letzter Tod:</#8799ae> <#FFFFFF>{death_location}</#FFFFFF> <#8799ae>({death_time})</#8799ae>'
       extras:
         title: '<gradient:#04c3e0:#0a92f1><bold>Extras</bold></gradient>'
-        resource-pack: '  <#8799ae>Resourcepack:</#8799ae> <#FFFFFF>{resource_pack}</#FFFFFF> <#8799ae>({resource_pack_status})</#8799ae>'
         heatmap: '  <#8799ae>Login-Zeiten:</#8799ae> <#FFFFFF>{heatmap_summary}</#FFFFFF>'
         heatmap-detail: '  <#8799ae>Details:</#8799ae> <#FFFFFF>{heatmap_details}</#FFFFFF>'
     status:

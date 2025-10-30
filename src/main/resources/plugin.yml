@@ -47,6 +47,14 @@ commands:
     description: Controls lobby time (freeze/lock).
     usage: "/time set <ticks> | /time auto on|off | /time lock <ticks>"
     permission: syntrix.time
+  fly:
+    description: Toggles player flight in the lobby.
+    usage: "/fly [player] [on|off|toggle]"
+    permission: syntrix.fly
+  jumpandrunholo:
+    description: Manages the Jump & Run leaderboard hologram.
+    usage: "/jumpandrunholo <spawn|remove|update>"
+    permission: syntrix.jumpandrun.hologram
 
 permissions:
   syntrix.spawn:      { description: Allows /spawn,          default: true }
@@ -58,6 +66,10 @@ permissions:
   syntrix.setheight:  { description: Allows /setheight,      default: op }
   syntrix.vanish:     { description: Allows /vanish,         default: op }
   syntrix.time:       { description: Allows /time commands,  default: op }
+  syntrix.fly: { description: Allows /fly,            default: op }
+  syntrix.fly.others: { description: Allows /fly on others,  default: op }
+  syntrix.fly.auto: { description: Auto enable flight on join, default: op }
+  syntrix.jumpandrun.hologram: { description: Manage the Jump & Run hologram, default: op }
 
   syntrix.vanish.see:  { description: See vanished players,     default: op }
   syntrix.vanish.auto: { description: Auto-vanish on join,      default: op }

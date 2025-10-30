@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "net.syntrix"
-version = "1.0.0-beta.2"
+version = "2.0.5-beta.2"
 
 java {
     toolchain { languageVersion.set(JavaLanguageVersion.of(21)) }
@@ -26,7 +26,7 @@ repositories {
     }
 
     dependencies {
-        compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
+        compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
         compileOnly("net.lythcore:lythcore-api:0.1.2")
     }
 

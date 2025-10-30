@@ -6,7 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 
 public final class ListenerManager {
-    private ListenerManager() {}
+    private ListenerManager() {
+    }
 
     public static void registerAll(SyntrixLobby plugin) {
         PluginManager pm = Bukkit.getPluginManager();
@@ -18,7 +19,7 @@ public final class ListenerManager {
         pm.registerEvents(new NavigatorListener(plugin), plugin);
         pm.registerEvents(new PlayerHiderListener(plugin, plugin.playerHider()), plugin);
         pm.registerEvents(new LobbyItemEnforcerListener(plugin), plugin);
-        pm.registerEvents(new JumpAndRunListener(plugin), plugin);
+        pm.registerEvents(new JumpAndRunListener(plugin, plugin.jumpAndRun()), plugin);
         pm.registerEvents(new JumpPadListener(plugin), plugin);
         pm.registerEvents(new DoubleJumpListener(plugin), plugin);
         pm.registerEvents(new HeightGuardListener(plugin), plugin);
