@@ -12,7 +12,6 @@ import net.lyzrex.syntrix.lobby.db.DBManager.IpHistoryEntry;
 import net.lyzrex.syntrix.lobby.db.DBManager.PlayerProfile;
 import net.lyzrex.syntrix.lobby.db.DBManager.PlaytimeStats;
 import net.lyzrex.syntrix.lobby.db.DBManager.SessionInfo;
-import net.lyzrex.syntrix.lobby.db.DBManager.SessionLocation;
 import net.lyzrex.syntrix.lobby.db.DBManager.SessionMoment;
 import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import org.bukkit.Bukkit;
@@ -230,24 +229,6 @@ public final class PlayerInfoCommand extends BaseCommand {
         boolean bedrock = liveSnapshot != null ? liveSnapshot.bedrock()
                 : latestSession != null && latestSession.bedrock();
 
-        SessionLocation currentLocation = liveSnapshot != null && liveSnapshot.currentLocation() != null
-                ? liveSnapshot.currentLocation()
-                : latestSession != null ? latestSession.lastLocation() : null;
-        SessionLocation lastLocation = latestSession != null ? latestSession.lastLocation() : currentLocation;
-        SessionLocation deathLocation = liveSnapshot != null && liveSnapshot.lastDeathLocation() != null
-                ? liveSnapshot.lastDeathLocation()
-                : latestSession != null ? latestSession.lastDeathLocation() : null;
-        Long deathTimeMillis = liveSnapshot != null && liveSnapshot.lastDeathTimeMillis() != null
-                ? liveSnapshot.lastDeathTimeMillis()
-                : latestSession != null && latestSession.lastDeathTime() != null
-                ? latestSession.lastDeathTime().getTime() : null;
-
-        String resourcePackStatus = liveSnapshot != null ? liveSnapshot.resourcePackStatus()
-                : latestSession != null ? latestSession.resourcePackStatus() : null;
-        String resourcePackId = liveSnapshot != null ? liveSnapshot.resourcePackId()
-                : latestSession != null ? latestSession.resourcePack() : null;
-        String resourcePackHash = liveSnapshot != null ? liveSnapshot.resourcePackHash()
-                : latestSession != null ? latestSession.resourcePackHash() : null;
 
         HeatmapSummary heatmap = buildHeatmap(moments, zone, locale, heatmapSummaryCount, heatmapDetailPerDay, na);
 
@@ -285,16 +266,6 @@ public final class PlayerInfoCommand extends BaseCommand {
         base.put("client_platform", bedrock
                 ? plugin.messages().getString("commands.playerinfo.platform.bedrock", "<#FFA94D>Bedrock</#FFA94D>")
                 : plugin.messages().getString("commands.playerinfo.platform.java", "<#2AF598>Java</#2AF598>"));
-        base.put("location_current", formatLocation(currentLocation, na));
-        base.put("location_last", formatLocation(lastLocation, na));
-        base.put("death_location", formatLocation(deathLocation, na));
-        base.put("death_time", deathTimeMillis != null
-                ? formatTimestamp(new Timestamp(deathTimeMillis), formatter, zone, na)
-                : na);
-        base.put("resource_pack", formatResourcePack(resourcePackStatus, resourcePackId, resourcePackHash, na));
-        base.put("resource_pack_status", safeValue(resourcePackStatus, na));
-        base.put("resource_pack_id", safeValue(resourcePackId, na));
-        base.put("resource_pack_hash", safeValue(resourcePackHash, na));
         base.put("heatmap_summary", heatmap.summary());
         base.put("heatmap_details", heatmap.details());
         base.put("heatmap_days", Integer.toString(heatmapDays));
@@ -363,22 +334,8 @@ public final class PlayerInfoCommand extends BaseCommand {
         addIfPresent(lines, "commands.playerinfo.sections.connection.mods",
                 "  <#8799ae>Mods:</#8799ae> <#FFFFFF>{client_mods}</#FFFFFF>", base);
 
-        addDivider(lines, base);
-        addIfPresent(lines, "commands.playerinfo.sections.location.title",
-                "<#F6C35D><bold>Positionen</bold></#F6C35D>", base);
-        addIfPresent(lines, "commands.playerinfo.sections.location.current",
-                "  <#8799ae>Aktuell:</#8799ae> <#FFFFFF>{location_current}</#FFFFFF>", base);
-        addIfPresent(lines, "commands.playerinfo.sections.location.previous",
-                "  <#8799ae>Letzte:</#8799ae> <#FFFFFF>{location_last}</#FFFFFF>", base);
-        addIfPresent(lines, "commands.playerinfo.sections.location.death",
-                "  <#8799ae>Letzter Tod:</#8799ae> <#FFFFFF>{death_location}</#FFFFFF> <#8799ae>({death_time})</#8799ae>", base);
-
-        addDivider(lines, base);
         addIfPresent(lines, "commands.playerinfo.sections.extras.title",
                 "<#F6C35D><bold>Extras</bold></#F6C35D>", base);
-        addIfPresent(lines, "commands.playerinfo.sections.extras.resource-pack",
-                "  <#8799ae>Resourcepack:</#8799ae> <#FFFFFF>{resource_pack}</#FFFFFF> <#8799ae>({resource_pack_status})</#8799ae>",
-                base);
         addIfPresent(lines, "commands.playerinfo.sections.extras.heatmap",
                 "  <#8799ae>Login-Zeiten:</#8799ae> <#FFFFFF>{heatmap_summary}</#FFFFFF>", base);
         addIfPresent(lines, "commands.playerinfo.sections.extras.heatmap-detail",
@@ -598,47 +555,6 @@ public final class PlayerInfoCommand extends BaseCommand {
     private String formatTps(Double tps, String na) {
         if (tps == null || tps.isNaN() || tps <= 0.0D) return na;
         return String.format(Locale.US, "%.1f", tps);
-    }
-
-    private String formatLocation(SessionLocation location, String na) {
-        if (location == null || location.world() == null) return na;
-        Double x = location.x();
-        Double y = location.y();
-        Double z = location.z();
-        String coords = String.format(Locale.US, "%.1f, %.1f, %.1f",
-                x != null ? x : 0.0, y != null ? y : 0.0, z != null ? z : 0.0);
-        String chunkInfo;
-        if (x != null && z != null) {
-            int chunkX = (int) Math.floor(x / 16.0);
-            int chunkZ = (int) Math.floor(z / 16.0);
-            int regionX = chunkX >> 5;
-            int regionZ = chunkZ >> 5;
-            chunkInfo = "Chunk " + chunkX + ", " + chunkZ + " | Region " + regionX + ", " + regionZ;
-        } else {
-            chunkInfo = "Chunk N/A";
-        }
-        return location.world() + " (" + coords + ") [" + chunkInfo + "]";
-    }
-
-    private String formatResourcePack(String status, String id, String hash, String na) {
-        List<String> parts = new ArrayList<>();
-        addResourcePackPart(parts, status);
-        addResourcePackPart(parts, id);
-        addResourcePackPart(parts, hash);
-        if (parts.isEmpty()) {
-            return na;
-        }
-        return String.join(" • ", parts);
-    }
-
-    private void addResourcePackPart(List<String> parts, String candidate) {
-        if (candidate == null) {
-            return;
-        }
-        String sanitized = sanitizeForMiniMessage(candidate.trim());
-        if (!sanitized.isBlank()) {
-            parts.add(sanitized);
-        }
     }
 
     private HeatmapSummary buildHeatmap(List<DBManager.SessionMoment> moments,

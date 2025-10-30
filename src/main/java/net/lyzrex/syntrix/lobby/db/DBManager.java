@@ -3,6 +3,10 @@ package net.lyzrex.syntrix.lobby.db;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -31,10 +35,17 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public final class DBManager {
 
@@ -63,6 +74,9 @@ public final class DBManager {
     private volatile String lastInvalidLoginZone = null;
     private final ConcurrentMap<UUID, Integer> cachedPlayerIds = new ConcurrentHashMap<>();
     private final ConcurrentMap<UUID, Long> activeSessions = new ConcurrentHashMap<>();
+    private SimpleConnectionPool connectionPool = null;
+    private int poolMaxSize = 8;
+    private long poolBorrowTimeoutMs = 5000L;
 
     private static final Pattern ACCESS_DENIED_PATTERN = Pattern.compile(
             "Access denied for user '([^']*)'@'([^']*)' \\(using password: (YES|NO)\\)",
@@ -83,6 +97,8 @@ public final class DBManager {
         this.baseProperties = new Properties();
         this.cachedPlayerIds.clear();
         this.activeSessions.clear();
+        shutdownPool();
+        this.connectionPool = null;
         if (!configEnabled) {
             plugin.getLogger().info("[DB] MySQL disabled in config.");
             return;
@@ -95,6 +111,8 @@ public final class DBManager {
         this.useSSL = plugin.getConfig().getBoolean("mysql.useSSL", false);
         this.serverTimezone = plugin.getConfig().getString("mysql.server-timezone", "UTC");
         this.jdbcOverride = plugin.getConfig().getString("mysql.jdbc-url", "");
+        this.poolMaxSize = Math.max(1, plugin.getConfig().getInt("mysql.pool.max-size", 8));
+        this.poolBorrowTimeoutMs = Math.max(250L, plugin.getConfig().getLong("mysql.pool.borrow-timeout", 5000L));
         this.cachedLoginZone = null;
         this.cachedLoginZoneKey = null;
         this.lastInvalidLoginZone = null;
@@ -149,6 +167,11 @@ public final class DBManager {
         return enabled;
     }
 
+    public void shutdown() {
+        shutdownPool();
+        this.enabled = false;
+    }
+
 
     public Connection getConnection() throws SQLException {
 
@@ -158,6 +181,13 @@ public final class DBManager {
 
 
     private Connection openConnection() throws SQLException {
+        if (connectionPool != null) {
+            return connectionPool.borrow();
+        }
+        return openRawConnection();
+    }
+
+    private Connection openRawConnection() throws SQLException {
         if (driverInfo == null || jdbcUrl == null) {
             throw new SQLException("No JDBC driver has been initialised.");
         }
@@ -177,7 +207,7 @@ public final class DBManager {
         boolean attemptedCreate = false;
         while (true) {
             try {
-                initial = openConnection();
+                initial = openRawConnection();
                 validateConnection(initial);
                 break;
             } catch (SQLException ex) {
@@ -219,17 +249,25 @@ public final class DBManager {
 
         try (Connection c = initial) {
             createTables(c);
-            this.enabled = true;
-            plugin.getLogger().info("[DB] Connected and ensured tables.");
-            if (configuredHost != null && !configuredHost.equalsIgnoreCase(this.host)) {
-                plugin.getLogger().warning("[DB] Connection succeeded using alternate host '" + this.host
-                        + "'. Update mysql.host to avoid fallback attempts on restart.");
-            }
-            return true;
         } catch (SQLException ex) {
             handleInitFailure(ex, false);
             return false;
         }
+
+        this.connectionPool = new SimpleConnectionPool(
+                jdbcUrl,
+                baseProperties,
+                poolMaxSize,
+                poolBorrowTimeoutMs,
+                plugin.getLogger()
+        );
+        this.enabled = true;
+        plugin.getLogger().info("[DB] Connected and ensured tables.");
+        if (configuredHost != null && !configuredHost.equalsIgnoreCase(this.host)) {
+            plugin.getLogger().warning("[DB] Connection succeeded using alternate host '" + this.host
+                    + "'. Update mysql.host to avoid fallback attempts on restart.");
+        }
+        return true;
     }
 
     private AlternateAttemptResult tryAlternateHost(SQLException cause) {
@@ -503,6 +541,13 @@ public final class DBManager {
             return "[" + trimmed + "]";
         }
         return trimmed;
+    }
+
+    private void shutdownPool() {
+        if (connectionPool != null) {
+            connectionPool.close();
+            connectionPool = null;
+        }
     }
 
 
@@ -1820,6 +1865,228 @@ public final class DBManager {
     private Double readDouble(ResultSet rs, String column) throws SQLException {
         double value = rs.getDouble(column);
         return rs.wasNull() ? null : value;
+    }
+    private static final class SimpleConnectionPool implements AutoCloseable {
+
+        private final String jdbcUrl;
+        private final Properties baseProperties;
+        private final int maxSize;
+        private final long borrowTimeoutMillis;
+        private final Logger logger;
+
+        private final BlockingQueue<PooledConnection> available = new LinkedBlockingQueue<>();
+        private final Set<PooledConnection> all = ConcurrentHashMap.newKeySet();
+        private final AtomicInteger total = new AtomicInteger();
+        private final AtomicBoolean closed = new AtomicBoolean();
+
+        private SimpleConnectionPool(String jdbcUrl,
+                                     Properties baseProperties,
+                                     int maxSize,
+                                     long borrowTimeoutMillis,
+                                     Logger logger) {
+            this.jdbcUrl = jdbcUrl;
+            this.baseProperties = baseProperties;
+            this.maxSize = Math.max(1, maxSize);
+            this.borrowTimeoutMillis = Math.max(100L, borrowTimeoutMillis);
+            this.logger = logger;
+        }
+
+        private Connection borrow() throws SQLException {
+            if (closed.get()) {
+                throw new SQLException("Connection pool has been closed");
+            }
+            while (true) {
+                PooledConnection pooled = available.poll();
+                if (pooled == null) {
+                    if (total.get() < maxSize) {
+                        pooled = createNewConnection();
+                    } else {
+                        try {
+                            pooled = available.poll(borrowTimeoutMillis, TimeUnit.MILLISECONDS);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            throw new SQLException("Interrupted while waiting for a database connection", e);
+                        }
+                        if (pooled == null) {
+                            throw new SQLException("Timed out waiting for a database connection from the pool");
+                        }
+                    }
+                }
+                if (pooled == null) {
+                    continue;
+                }
+                if (!pooled.acquire()) {
+                    discard(pooled);
+                    continue;
+                }
+                return pooled.proxy();
+            }
+        }
+
+        private PooledConnection createNewConnection() throws SQLException {
+            while (true) {
+                int current = total.get();
+                if (current >= maxSize) {
+                    return null;
+                }
+                if (total.compareAndSet(current, current + 1)) {
+                    break;
+                }
+            }
+            try {
+                Properties props = cloneProperties(baseProperties);
+                Connection delegate = DriverManager.getConnection(jdbcUrl, props);
+                PooledConnection pooled = new PooledConnection(delegate);
+                all.add(pooled);
+                return pooled;
+            } catch (SQLException ex) {
+                total.decrementAndGet();
+                throw ex;
+            }
+        }
+
+        private Properties cloneProperties(Properties source) {
+            Properties copy = new Properties();
+            for (Map.Entry<Object, Object> entry : source.entrySet()) {
+                copy.put(entry.getKey(), entry.getValue());
+            }
+            return copy;
+        }
+
+        private void returnToPool(PooledConnection pooled) {
+            if (closed.get()) {
+                pooled.closeSilently();
+                return;
+            }
+            available.offer(pooled);
+        }
+
+        private void discard(PooledConnection pooled) {
+            pooled.invalidate();
+            available.remove(pooled);
+            if (!all.remove(pooled)) {
+                return;
+            }
+            pooled.closeSilently();
+            total.decrementAndGet();
+        }
+
+        private boolean isClosed() {
+            return closed.get();
+        }
+
+        private int totalConnections() {
+            return total.get();
+        }
+
+        @Override
+        public void close() {
+            if (!closed.compareAndSet(false, true)) {
+                return;
+            }
+            available.clear();
+            for (PooledConnection pooled : all) {
+                pooled.closeSilently();
+            }
+            all.clear();
+        }
+
+        private final class PooledConnection implements InvocationHandler {
+            private final Connection delegate;
+            private final Connection proxy;
+            private final AtomicBoolean inUse = new AtomicBoolean();
+            private final AtomicBoolean valid = new AtomicBoolean(true);
+
+            private PooledConnection(Connection delegate) {
+                this.delegate = delegate;
+                this.proxy = (Connection) Proxy.newProxyInstance(
+                        delegate.getClass().getClassLoader(),
+                        new Class[] { Connection.class },
+                        this
+                );
+            }
+
+            private Connection proxy() {
+                return proxy;
+            }
+
+            private boolean acquire() {
+                if (!valid.get() || !inUse.compareAndSet(false, true)) {
+                    return false;
+                }
+                try {
+                    if (delegate.isClosed()) {
+                        inUse.set(false);
+                        return false;
+                    }
+                    if (!delegate.isValid(2)) {
+                        inUse.set(false);
+                        return false;
+                    }
+                } catch (SQLException ex) {
+                    logger.log(Level.WARNING, "[DB] Connection validation failed", ex);
+                    inUse.set(false);
+                    return false;
+                }
+                return true;
+            }
+
+            private void release() {
+                if (!inUse.compareAndSet(true, false)) {
+                    return;
+                }
+                if (!valid.get()) {
+                    discard(this);
+                    return;
+                }
+                returnToPool(this);
+            }
+
+            private void closeSilently() {
+                try {
+                    delegate.close();
+                } catch (SQLException ex) {
+                    logger.log(Level.FINE, "[DB] Failed to close pooled connection", ex);
+                }
+            }
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                String name = method.getName();
+                if ("close".equals(name)) {
+                    release();
+                    return null;
+                }
+                if ("isClosed".equals(name)) {
+                    if (!inUse.get()) {
+                        return true;
+                    }
+                }
+                if (!inUse.get()) {
+                    throw new SQLException("Connection already returned to pool");
+                }
+                try {
+                    return method.invoke(delegate, args);
+                } catch (InvocationTargetException ex) {
+                    Throwable cause = ex.getTargetException();
+                    if (cause instanceof SQLException sql && shouldDiscard(sql)) {
+                        valid.set(false);
+                        inUse.set(false);
+                        discard(this);
+                    }
+                    throw cause;
+                }
+            }
+
+            private boolean shouldDiscard(SQLException ex) {
+                return ex.getSQLState() != null && ex.getSQLState().startsWith("08");
+            }
+
+            private void invalidate() {
+                valid.set(false);
+                inUse.set(false);
+            }
+        }
     }
 
     public record SessionLocation(String world,

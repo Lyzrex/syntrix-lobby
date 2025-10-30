@@ -83,5 +83,8 @@ public final class PlayerTelemetryListener implements Listener {
             return;
         }
         plugin.sessions().handleDeath(event.getEntity());
+        if (plugin.deathLogs() != null) {
+            plugin.deathLogs().handleDeath(event);
+        }
     }
 }

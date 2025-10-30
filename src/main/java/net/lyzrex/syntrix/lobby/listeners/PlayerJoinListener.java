@@ -4,7 +4,10 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
 import net.lyzrex.syntrix.lobby.db.DBManager;
+import net.lyzrex.syntrix.lobby.utils.FlightUtil;
+import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -27,7 +30,9 @@ public final class PlayerJoinListener implements Listener {
     private final SyntrixLobby plugin;
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
-    public PlayerJoinListener(SyntrixLobby plugin) { this.plugin = plugin; }
+    public PlayerJoinListener(SyntrixLobby plugin) {
+        this.plugin = plugin;
+    }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
@@ -46,7 +51,8 @@ public final class PlayerJoinListener implements Listener {
                 if (addr != null && addr.getAddress() != null) {
                     ip = addr.getAddress().getHostAddress();
                 }
-            } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+            }
             final String ipFinal = ip;
             final DBManager.SessionStart startCopy = sessionStart;
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin,
@@ -87,6 +93,7 @@ public final class PlayerJoinListener implements Listener {
                 p.getInventory().setArmorContents(null);
             }
             giveLobbyLoadout(plugin, p);
+            applyAutoFlight(p);
         });
     }
 
@@ -153,5 +160,25 @@ public final class PlayerJoinListener implements Listener {
         return it;
     }
 
-    private static int clamp(int s) { return Math.max(0, Math.min(8, s)); }
+    private static int clamp(int s) {
+        return Math.max(0, Math.min(8, s));
+    }
+
+    private void applyAutoFlight(Player player) {
+        if (!plugin.getConfig().getBoolean("fly.auto-on-join.enabled", true)) {
+            return;
+        }
+        String perm = plugin.getConfig().getString("fly.auto-on-join.permission", "syntrix.fly.auto");
+        if (perm != null && !perm.isBlank() && !player.hasPermission(perm)) {
+            return;
+        }
+        if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) {
+            return;
+        }
+        boolean changed = FlightUtil.setFlight(player, true);
+        if (changed && plugin.getConfig().getBoolean("fly.messages", true)) {
+            MessageUtil.send(player, plugin, "fly.auto-enabled",
+                    "<gray>Flight enabled automatically.</gray>");
+        }
+    }
 }
