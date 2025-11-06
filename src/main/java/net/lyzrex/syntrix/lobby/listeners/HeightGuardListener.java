@@ -8,22 +8,14 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.persistence.PersistentDataType;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
-
 
 public final class HeightGuardListener implements Listener {
 
     private final SyntrixLobby plugin;
     private final MessageService ms;
 
-    private final Set<UUID> deathByHeight = new HashSet<>();
 
     public HeightGuardListener(SyntrixLobby plugin) {
         this.plugin = plugin;
@@ -64,33 +56,19 @@ public final class HeightGuardListener implements Listener {
             return;
         }
 
-        if (e.getTo() != null && e.getTo().getY() <= h && p.getHealth() > 0.0) {
-            deathByHeight.add(p.getUniqueId());
-            p.setHealth(0.0);
+        if (e.getFrom() != null && e.getFrom().getY() <= h) {
+            return;
         }
+
+        if (e.getTo() != null && e.getTo().getY() <= h) {
+            Location target = lobbySpawn();
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                p.teleport(target);
+                ms.send(p, plugin.messages().getString(
+                        "commands.setheight.killed",
+                        "<gray>You have been teleported to the lobby spawn.</gray>"
+                ));
+            });
     }
-
-    @EventHandler
-    public void onDeath(PlayerDeathEvent e) {
-        Player p = e.getEntity();
-        if (!deathByHeight.contains(p.getUniqueId())) return;
-
-        e.deathMessage(null);
-        ms.send(p, plugin.messages().getString(
-                "commands.setheight.killed",
-                "<gray>You have been teleported to the lobby spawn.</gray>"
-        ));
-    }
-
-    @EventHandler
-    public void onRespawn(PlayerRespawnEvent e) {
-        Player p = e.getPlayer();
-        if (!deathByHeight.remove(p.getUniqueId())) return;
-
-        e.setRespawnLocation(lobbySpawn());
-        ms.send(p, plugin.messages().getString(
-                "sethight.respawn",
-                "<gray>You have been teleported to the lobby spawn.</gray>"
-        ));
     }
 }

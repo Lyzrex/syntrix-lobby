@@ -81,17 +81,25 @@ public final class FlyCommand extends BaseCommand {
         }
 
         boolean wasEnabled = FlightUtil.isFlightEnabled(target);
+        var doubleJump = plugin.doubleJump();
+        boolean treatAsPrimed = doubleJump != null
+                && doubleJump.isPrimed(target)
+                && !target.isFlying()
+                && target.getGameMode() != GameMode.CREATIVE
+                && target.getGameMode() != GameMode.SPECTATOR;
         boolean enable = switch (mode) {
             case ENABLE -> true;
             case DISABLE -> false;
-            case TOGGLE -> !wasEnabled;
+            case TOGGLE -> treatAsPrimed ? true : !wasEnabled;
         };
 
         boolean changed = FlightUtil.setFlight(target, enable);
-        if (enable) {
-            plugin.doubleJump().disableForFlight(target);
-        } else {
-            plugin.doubleJump().restoreAfterFlight(target);
+        if (doubleJump != null) {
+            if (enable) {
+                doubleJump.disableForFlight(target);
+            } else {
+                doubleJump.restoreAfterFlight(target);
+            }
         }
         boolean showMessages = plugin.getConfig().getBoolean("fly.messages", true);
 
@@ -105,7 +113,6 @@ public final class FlyCommand extends BaseCommand {
             }
             return true;
         }
-
 
         if (!changed && enable != wasEnabled) {
             if (!enable && (target.getGameMode() == GameMode.CREATIVE || target.getGameMode() == GameMode.SPECTATOR)) {
