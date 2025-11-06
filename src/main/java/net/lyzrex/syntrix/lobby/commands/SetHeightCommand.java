@@ -24,12 +24,12 @@ public final class SetHeightCommand implements TabExecutor {
         this.plugin = plugin;
         this.ms = new MessageService(plugin);
 
-        PluginCommand cmd = plugin.getCommand("sethight");
+        PluginCommand cmd = plugin.getCommand("setheight");
         if (cmd != null) {
             cmd.setExecutor(this);
             cmd.setTabCompleter(this);
         } else {
-            plugin.getLogger().warning("Command 'sethight' fehlt in plugin.yml");
+            plugin.getLogger().warning("Command 'setheight' fehlt in plugin.yml");
         }
     }
 
@@ -39,12 +39,17 @@ public final class SetHeightCommand implements TabExecutor {
                              @NotNull String label,
                              @NotNull String[] args) {
 
+        if (!plugin.getConfig().getBoolean("commands.setheight.enabled", true)) {
+            return true;
+        }
+
         if (!(sender instanceof Player p)) {
             sender.sendMessage(mm.deserialize(ms.prefix() + "<red>Only players can use this command.</red>"));
             return true;
         }
 
-        if (!p.hasPermission("syntrix.sethight")) {
+        String perm = plugin.getConfig().getString("commands.setheight.permission", "syntrix.setheight");
+        if (perm != null && !perm.isBlank() && !p.hasPermission(perm)) {
             p.sendMessage(mm.deserialize(ms.prefix() + "<red>You do not have permission.</red>"));
             return true;
         }
@@ -68,10 +73,10 @@ public final class SetHeightCommand implements TabExecutor {
             height = Math.floor(p.getLocation().getY());
         }
 
-        plugin.getConfig().set("safety.deathHeight", height);
+        plugin.getConfig().set("protections.deathHeight", height);
         plugin.saveConfig();
 
-        String msg = plugin.messages().getString("sethight.updated",
+        String msg = plugin.messages().getString("commands.setheight.updated",
                         "<green>Death height set to</green> <white>{height}</white>.")
                 .replace("{height}", String.valueOf(height));
         p.sendMessage(mm.deserialize(ms.prefix() + msg));

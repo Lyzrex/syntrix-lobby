@@ -18,19 +18,23 @@ build:
 # Jump and Run
 # ----------------------------------------------------------
 jumpandrun:
-  start: '<#8799ae>Jump & Run <#2AF598>started</#2AF598><#8799ae>!'
-  cancel: '<#8799ae>Jump & Run <#FF4D4F>canceled</#FF4D4F><#8799ae>.'
-  finish: '<#8799ae>Jump & Run <#2AF598>completed</#2AF598><#8799ae> in <#FFFFFF>{time}</#FFFFFF>! <#F6C35D>Congratulations!'
   no-permission: '<#FF4D4F>You do not have permission to start Jump & Run.'
   already-active: '<#8799ae>You <#FF4D4F>already</#FF4D4F><#8799ae> have an active Jump & Run.'
-  step: '<#8799ae>Step <#2AF598>{current}</#2AF598><#8799ae>/<#FFFFFF>{total}'
-  reset: '<#FF4D4F>You fell!</#FF4D4F> <#8799ae>Teleporting to the last checkpoint.</#8799ae>'
-  checkpoint: '<#2AF598>Checkpoint reached:</#2AF598> <#FFFFFF>{current}</#FFFFFF>/<#FFFFFF>{total}</#FFFFFF>'
-  new-record: '<#F6C35D>New personal best!</#F6C35D>'
   item-name: '<#FFFFFF><bold>🞂 <gradient:#2AF598:#009EFD>Jump & Run</gradient></bold>'
+  already-running: '<#8799ae>You <#FF4D4F>already</#FF4D4F><#8799ae> have an active Jump & Run. <#FFFFFF>Sneak-right-click</#FFFFFF> to cancel.</#8799ae>'
+  failed: '<#FF4D4F>No Jump & Run route could be generated at this spot.</#FF4D4F>'
   item-lore:
     - '<#8799ae>Right-click to start'
     - '<#8799ae>a Jump & Run route'
+  actionbar:
+    base: '<#8799ae>[{time}] - Step <#2AF598>{current}</#2AF598>/<white>{total}</white> ({left} left to Checkpoint)</#8799ae>{status}'
+    start: '<#2AF598>• Go!</#2AF598>'
+    checkpoint: '<#2AF598>Checkpoint reached!</#2AF598>'
+    reset: '<#FF4D4F>Reset to checkpoint.</#FF4D4F>'
+    cancel: '<#FF4D4F>Run canceled.</#FF4D4F>'
+    finish: '<#2AF598>Finished!</#2AF598>'
+    finish-record: '<#F6C35D>New personal best!</#F6C35D>'
+    left-finish: 'Goal'
   leaderboard:
     title: '<gradient:#2AF598:#009EFD><bold>Jump & Run • Top 10</bold></gradient>'
     line: '<#8799ae>{pos}. <#FFFFFF>{player}</#FFFFFF> <#8799ae>- {time}'
@@ -153,66 +157,6 @@ commands:
       updated: '<#2AF598>Jump & Run hologram updated.</#2AF598>'
       no-permission: '<#FF4D4F>You do not have permission to manage the leaderboard hologram.</#FF4D4F>'
       player-only: '<#FF4D4F>Only players can perform this action.</#FF4D4F>'
-
-
-  playerinfo:
-    usage: '<#8799ae>Usage:</#8799ae> <#FFFFFF>/playerinfo playerName</#FFFFFF> <#8799ae>or</#8799ae> <#FFFFFF>/playerinfo #123</#FFFFFF> <#8799ae>or</#8799ae> <#FFFFFF>/playerinfo id 123</#FFFFFF>'
-    ip-usage: '<#8799ae>Usage:</#8799ae> <#FFFFFF>/playerinfo ip playerName</#FFFFFF> <#8799ae>or</#8799ae> <#FFFFFF>/playerinfo ip #123</#FFFFFF> <#8799ae>or</#8799ae> <#FFFFFF>/playerinfo ip id 123</#FFFFFF>'
-    header: '<gradient:#2AF598:#009EFD>Syntrix</gradient> <#8799ae>• Spielerinfo für <#FFFFFF>{player}</#FFFFFF> <#8799ae>(ID #{id})</#8799ae>'
-    section-divider: '<#2A3344>───────────────────────────────────</#2A3344>'
-    sections:
-      profile:
-        title: '<gradient:#04c3e0:#0a92f1><bold>Profil</bold></gradient>'
-        name: '  <#8799ae>Name:</#8799ae> <#FFFFFF>{player}</#FFFFFF>'
-        uuid: '  <#8799ae>UUID:</#8799ae> <#FFFFFF>{uuid}</#FFFFFF>'
-        status: '  <#8799ae>Status:</#8799ae> {status}'
-        last-ip: '  <#8799ae>Letzte IP:</#8799ae> <#FFFFFF>{last_ip}</#FFFFFF>'
-      activity:
-        title: '<gradient:#04c3e0:#0a92f1><bold>Aktivität</bold></gradient>'
-        first-join: '  <#8799ae>Erster Login:</#8799ae> <#FFFFFF>{first_join}</#FFFFFF>'
-        last-join: '  <#8799ae>Letzter Login:</#8799ae> <#FFFFFF>{last_join}</#FFFFFF>'
-        last-quit: '  <#8799ae>Logout:</#8799ae> <#FFFFFF>{last_quit}</#FFFFFF>'
-        login-streak: '  <#8799ae>Streak:</#8799ae> <#FFFFFF>{login_streak}</#FFFFFF>'
-        total-joins: '  <#8799ae>Logins gesamt:</#8799ae> <#FFFFFF>{total_joins}</#FFFFFF>'
-      playtime:
-        title: '<gradient:#04c3e0:#0a92f1><bold>Spielzeit</bold></gradient>'
-        total: '  <#8799ae>Gesamt:</#8799ae> <#FFFFFF>{playtime_total}</#FFFFFF>'
-        ranges: '  <#8799ae>24h:</#8799ae> <#FFFFFF>{playtime_today}</#FFFFFF> <#8799ae>| 7d:</#8799ae> <#FFFFFF>{playtime_7d}</#FFFFFF> <#8799ae>| 30d:</#8799ae> <#FFFFFF>{playtime_30d}</#FFFFFF>'
-        session: '  <#8799ae>Aktuelle Session:</#8799ae> <#FFFFFF>{session_duration}</#FFFFFF> <#8799ae>(AFK {session_afk})</#8799ae>'
-      connection:
-        title: '<gradient:#04c3e0:#0a92f1><bold>Verbindung</bold></gradient>'
-        ping: '  <#8799ae>Ping:</#8799ae> <#FFFFFF>{session_ping_current}</#FFFFFF> <#8799ae>(Ø {session_ping_average} • Min {session_ping_min} • Max {session_ping_max})</#8799ae>'
-        tps: '  <#8799ae>Server:</#8799ae> <#FFFFFF>{session_last_tps}</#FFFFFF> <#8799ae>(Join TPS {session_join_tps} • Join Ping {session_join_ping})</#8799ae>'
-        client: '  <#8799ae>Client:</#8799ae> <#FFFFFF>{client_version}</#FFFFFF> <#8799ae>(Protocol {client_protocol} • {client_platform})</#8799ae>'
-        brand: '  <#8799ae>Brand:</#8799ae> <#FFFFFF>{client_brand}</#FFFFFF>'
-        mods: '  <#8799ae>Mods:</#8799ae> <#FFFFFF>{client_mods}</#FFFFFF>'
-      extras:
-        title: '<gradient:#04c3e0:#0a92f1><bold>Extras</bold></gradient>'
-        heatmap: '  <#8799ae>Login-Zeiten:</#8799ae> <#FFFFFF>{heatmap_summary}</#FFFFFF>'
-        heatmap-detail: '  <#8799ae>Details:</#8799ae> <#FFFFFF>{heatmap_details}</#FFFFFF>'
-    status:
-      line: '<#8799ae>Status:</#8799ae> {status}'
-      online: '<#2AF598>online</#2AF598>'
-      offline: '<#FF4D4F>offline</#FF4D4F>'
-    platform:
-      bedrock: '<#FFA94D>Bedrock</#FFA94D>'
-      java: '<#2AF598>Java</#2AF598>'
-    alts:
-      header: '<gradient:#04c3e0:#0a92f1><bold>Verdächtige Accounts</bold></gradient>'
-      entry: '  <#FFFFFF>{name}</#FFFFFF> <#8799ae>({ips} • {last_seen})</#8799ae>'
-      none: '  <#8799ae>Keine Übereinstimmungen gefunden.</#8799ae>'
-    ip-history:
-      header: '<gradient:#2AF598:#009EFD>Syntrix</gradient> <#8799ae>• IP-Historie für <#FFFFFF>{player}</#FFFFFF>:</#8799ae>'
-      entry: '  <#FFFFFF>{ip}</#FFFFFF> <#8799ae>({first_seen} → {last_seen}, {uses} Logins)</#8799ae>'
-      none: '  <#8799ae>Keine gespeicherten IP-Adressen.</#8799ae>'
-    heatmap:
-      none-detail: 'Keine aktuellen Login-Daten.'
-    not-found: '<#FF4D4F>No database record for that player.</#FF4D4F>'
-    invalid-id: '<#FF4D4F>Please provide a numeric player ID (for example 12 or #12).</#FF4D4F>'
-    database-disabled: '<#FF4D4F>The database system is disabled.</#FF4D4F>'
-    not-available: '<#8799ae>N/A</#8799ae>'
-    error: '<#FF4D4F>Database error while fetching player info.</#FF4D4F>'
-
   time:
     usage: '<gray>Usage:</gray> <white>/time set <ticks></white> | <white>/time auto on|off</white> | <white>/time lock <ticks></white>'
     set:

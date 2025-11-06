@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby.listeners;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -109,12 +110,7 @@ public final class JumpPadListener implements Listener {
 
         if (plugin.getConfig().getBoolean("jumppads.sound.enabled", true)) {
             String sName = plugin.getConfig().getString("jumppads.sound.type", "ENTITY_FIREWORK_ROCKET_LAUNCH");
-            Sound sound;
-            try {
-                sound = Sound.valueOf(sName.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException ex) {
-                sound = Sound.ENTITY_FIREWORK_ROCKET_LAUNCH;
-            }
+            Sound sound = SoundUtil.resolve(sName, Sound.ENTITY_FIREWORK_ROCKET_LAUNCH);
             float vol = (float) plugin.getConfig().getDouble("jumppads.sound.volume", 0.6D);
             float pit = (float) plugin.getConfig().getDouble("jumppads.sound.pitch", 1.4D);
             p.playSound(p.getLocation(), sound, vol, pit);

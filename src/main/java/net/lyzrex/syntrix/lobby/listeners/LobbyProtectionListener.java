@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
@@ -27,13 +28,22 @@ public final class LobbyProtectionListener implements Listener {
         this.plugin = plugin;
     }
 
-
+    private boolean bypass(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (!player.getPersistentDataContainer().has(SyntrixLobby.BUILD_MODE, PersistentDataType.BYTE)) {
+            return false;
+        }
+        String perm = plugin.getConfig().getString("protections.bypass-permission", "syntrix.protections.bypass");
+        return perm == null || perm.isBlank() || player.hasPermission(perm);
+    }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noBuild", true)) return;
         Player p = e.getPlayer();
-        if (BuildCommand.hasBypass(p.getUniqueId())) return;
+        if (BuildCommand.hasBypass(p.getUniqueId()) || bypass(p)) return;
         e.setCancelled(true);
     }
 
@@ -41,7 +51,7 @@ public final class LobbyProtectionListener implements Listener {
     public void onBlockBreak(BlockBreakEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noBuild", true)) return;
         Player p = e.getPlayer();
-        if (BuildCommand.hasBypass(p.getUniqueId())) return;
+        if (BuildCommand.hasBypass(p.getUniqueId()) || bypass(p)) return;
         e.setCancelled(true);
     }
 
@@ -50,6 +60,7 @@ public final class LobbyProtectionListener implements Listener {
     @EventHandler
     public void onItemDrop(PlayerDropItemEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noDrop", true)) return;
+        if (bypass(e.getPlayer())) return;
 
         e.setCancelled(true);
     }
@@ -57,6 +68,7 @@ public final class LobbyProtectionListener implements Listener {
     @EventHandler
     public void onItemPickup(PlayerAttemptPickupItemEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noDrop", true)) return;
+        if (bypass(e.getPlayer())) return;
         e.setCancelled(true);
     }
 
@@ -71,8 +83,31 @@ public final class LobbyProtectionListener implements Listener {
                 (e.getDamager() instanceof Projectile proj) && (proj.getShooter() instanceof Player);
 
         if (damagerIsPlayer || damagerProjectileFromPlayer) {
-            e.setCancelled(true);
+
+            Player attacker = damagerIsPlayer ? (Player) e.getDamager()
+                    : (Player) ((Projectile) e.getDamager()).getShooter();
+            if (!bypass(attacker)) {
+                e.setCancelled(true);
+            }
         }
+    }
+
+    @EventHandler
+    public void onFall(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (event.getCause() != EntityDamageEvent.DamageCause.FALL) {
+            return;
+        }
+        if (!plugin.getConfig().getBoolean("protections.no-fall-damage", true)) {
+            return;
+        }
+        if (bypass(player)) {
+            return;
+        }
+        event.setCancelled(true);
+        player.setFallDistance(0.0F);
     }
 
 
@@ -81,6 +116,9 @@ public final class LobbyProtectionListener implements Listener {
     public void onFood(FoodLevelChangeEvent e) {
         if (!plugin.getConfig().getBoolean("protections.no-hunger", true)) return;
         if (e.getEntity() instanceof Player p) {
+            if (bypass(p)) {
+                return;
+            }
             if (e.getFoodLevel() < p.getFoodLevel()) {
                 e.setCancelled(true);
                 p.setFoodLevel(20);
@@ -96,6 +134,10 @@ public final class LobbyProtectionListener implements Listener {
         if (e.getClickedBlock() == null) return;
         Material type = e.getClickedBlock().getType();
 
+        if (bypass(e.getPlayer())) {
+            return;
+        }
+
         if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
             if (plugin.getConfig().getBoolean("protections.block-doors", true) && Tag.DOORS.isTagged(type)) {
                 e.setCancelled(true); return;
@@ -104,6 +146,15 @@ public final class LobbyProtectionListener implements Listener {
                 e.setCancelled(true); return;
             }
             if (plugin.getConfig().getBoolean("protections.block-fence-gates", true) && Tag.FENCE_GATES.isTagged(type)) {
+                e.setCancelled(true); return;
+            }
+            if (plugin.getConfig().getBoolean("protections.block-hoppers", true) && type == Material.HOPPER) {
+                e.setCancelled(true); return;
+            }
+            if (plugin.getConfig().getBoolean("protections.block-barrels", true) && type == Material.BARREL) {
+                e.setCancelled(true); return;
+            }
+            if (plugin.getConfig().getBoolean("protections.block-flower-pots", true) && Tag.FLOWER_POTS.isTagged(type)) {
                 e.setCancelled(true); return;
             }
             if (plugin.getConfig().getBoolean("protections.block-note-blocks", true) && type == Material.NOTE_BLOCK) {

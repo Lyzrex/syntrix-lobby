@@ -88,7 +88,24 @@ public final class FlyCommand extends BaseCommand {
         };
 
         boolean changed = FlightUtil.setFlight(target, enable);
+        if (enable) {
+            plugin.doubleJump().disableForFlight(target);
+        } else {
+            plugin.doubleJump().restoreAfterFlight(target);
+        }
         boolean showMessages = plugin.getConfig().getBoolean("fly.messages", true);
+
+        if (!changed && enable == wasEnabled) {
+            if (showMessages) {
+                String alreadyKey = enable ? "fly.already-enabled" : "fly.already-disabled";
+                String alreadyDefault = enable
+                        ? "<gray>Flight is already enabled.</gray>"
+                        : "<gray>Flight is already disabled.</gray>";
+                MessageUtil.send(sender, plugin, alreadyKey, alreadyDefault);
+            }
+            return true;
+        }
+
 
         if (!changed && enable != wasEnabled) {
             if (!enable && (target.getGameMode() == GameMode.CREATIVE || target.getGameMode() == GameMode.SPECTATOR)) {

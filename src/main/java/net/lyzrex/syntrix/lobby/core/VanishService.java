@@ -1,62 +1,69 @@
 package net.lyzrex.syntrix.lobby.core;
 
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
-import net.lyzrex.syntrix.lobby.db.DBManager;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
 
 public final class VanishService {
 
-    private final SyntrixLobby plugin;
-    private final DBManager db;
+    private static final String DATA_FILE = "vanish-data.yml";
 
+    private final SyntrixLobby plugin;
 
     private final Set<UUID> vanished = new HashSet<>();
+    private File dataFile;
+    private FileConfiguration dataConfig;
 
     public VanishService(SyntrixLobby plugin) {
         this.plugin = plugin;
-        this.db = plugin.db();
     }
-
 
     public void init() {
-
-        if (!db.isEnabled()) {
-            plugin.getLogger().info("[Vanish] Skipping database-backed vanish cache because MySQL is disabled.");
-            return;
-        }
-
-        try (Connection c = db.getConnection();
-             PreparedStatement st = c.prepareStatement(
-                     "CREATE TABLE IF NOT EXISTS syntrix_vanish (" +
-                             "uuid BINARY(16) PRIMARY KEY," +
-                             "vanished TINYINT(1) NOT NULL" +
-                             ")")) {
-            st.executeUpdate();
-        } catch (SQLException ex) {
-            plugin.getLogger().severe("Failed to ensure vanish table: " + ex.getMessage());
-        }
-
-        try (Connection c = db.getConnection();
-             var rs = c.createStatement().executeQuery(
-                     "SELECT uuid FROM syntrix_vanish WHERE vanished=1")) {
-            while (rs.next()) {
-                UUID id = db.fromBytes(rs.getBytes(1));
-                vanished.add(id);
-            }
-        } catch (SQLException ex) {
-            plugin.getLogger().severe("Failed to load vanish cache: " + ex.getMessage());
-        }
+        load();
+        refreshAll();
     }
 
+        private void load() {
+            if (dataFile == null) {
+                dataFile = new File(plugin.getDataFolder(), DATA_FILE);
+            }
+            if (!dataFile.exists()) {
+                vanished.clear();
+                dataConfig = new YamlConfiguration();
+                return;
+        }
+            dataConfig = YamlConfiguration.loadConfiguration(dataFile);
+            List<String> entries = dataConfig.getStringList("vanished");
+            vanished.clear();
+            for (String raw : entries) {
+                try {
+                    vanished.add(UUID.fromString(raw));
+                } catch (IllegalArgumentException ignored) {
+                    plugin.getLogger().warning("[Vanish] Ignoring invalid UUID in vanish-data.yml: " + raw);
+                }
+            }
+        }
+    private void save() {
+        if (dataConfig == null) {
+            dataConfig = new YamlConfiguration();
+        }
+        dataConfig.set("vanished", vanished.stream().map(UUID::toString).toList());
+        try {
+            dataConfig.save(dataFile);
+        } catch (IOException ex) {
+            plugin.getLogger().severe("[Vanish] Could not save vanish-data.yml: " + ex.getMessage());
+        }
+    }
 
     private boolean canSeeVanished(Player viewer) {
         String perm = plugin.getConfig().getString("vanish.see-permission", "syntrix.vanish.see");
@@ -70,18 +77,7 @@ public final class VanishService {
     public void setVanished(UUID id, boolean state) {
         if (state) vanished.add(id); else vanished.remove(id);
 
-        if (db.isEnabled()) {
-            try (Connection c = db.getConnection();
-                 PreparedStatement st = c.prepareStatement(
-                         "INSERT INTO syntrix_vanish (uuid, vanished) VALUES(?,?) " +
-                                 "ON DUPLICATE KEY UPDATE vanished=VALUES(vanished)")) {
-                st.setBytes(1, db.toBytes(id));
-                st.setBoolean(2, state);
-                st.executeUpdate();
-            } catch (SQLException ex) {
-                plugin.getLogger().severe("Failed to write vanish state: " + ex.getMessage());
-            }
-        }
+        save();
 
         Player p = Bukkit.getPlayer(id);
         if (p != null && p.isOnline()) applyVisibility(p);

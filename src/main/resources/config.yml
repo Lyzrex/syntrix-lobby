@@ -20,11 +20,11 @@ lobby:
 join:
   teleport-to-spawn:
     enabled: true
-    allow-player-toggle: true   # /spawn autojoin [on|off]
+    allow-player-toggle: true
   clear-inventory: true
 
 # ----------------------------------------------------------
-# Protections (alles toggelbar)
+# Protections
 # Gilt für: InteractionGuard, Hunger, etc.
 # ----------------------------------------------------------
 protections:
@@ -38,8 +38,10 @@ protections:
   block-note-blocks: true
   block-jukebox: true
   protect-farmland: true
+  no-fall-damage: true
   no-hunger: true
   deathHeight: -64
+  bypass-permission: syntrix.protections.bypass
 
 # ----------------------------------------------------------
 # Chat — HexColor & (optional) MiniMessage im Chat
@@ -142,44 +144,9 @@ commands:
   setspawn:    { enabled: true, permission: syntrix.setspawn }
   lobbyreload: { enabled: true, permission: syntrix.reload }
   build:       { enabled: true, permission: syntrix.build }
-
-playerinfo:
-  enabled: true
-  permission: syntrix.playerinfo
-  ip-history-permission: ''   # optional override for /playerinfo ip
-  time-format: 'dd.MM.yyyy HH:mm:ss'
-  timezone: 'Europe/Berlin'   # leave empty to use the system default zone (also controls login streak day changes)
-  max-alt-results: 5
-  ip-history-limit: 20
-  afk-threshold-seconds: 120  # players are considered AFK after this many seconds without activity
-  heatmap:
-    days: 30           # how many days of session history to analyse for the login heatmap
-    summary-count: 4   # number of time windows to show in the condensed summary
-    max-rows: 256      # maximum amount of session rows to fetch per player
-    detail-per-day: 3  # how many time windows to list per day in the hover details
-
   setheight:   { enabled: true, permission: syntrix.setheight }
   skull:       { enabled: true, permission: syntrix.skull }
   time:        { enabled: true, permission: syntrix.time }
-
-# ----------------------------------------------------------
-# MySQL (für /playerinfo & PlayerDataListener-Dateilogs)
-# ----------------------------------------------------------
-mysql:
-  enabled: true
-  host: localhost
-  port: 3306
-  database: "Your Database"
-  user: "Your User"
-  password: "Your Password"
-  useSSL: false # Set to true only when your database requires SSL
-  dialect: auto # auto/mysql/mariadb - choose which JDBC driver should be used
-  server-timezone: UTC
-  jdbc-url: ""
-  connection-properties: {}
-  pool:
-    max-size: 8
-    borrow-timeout: 5000 # milliseconds to wait for a free connection before failing
 
 
 # ----------------------------------------------------------

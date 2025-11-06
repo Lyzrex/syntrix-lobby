@@ -5,6 +5,7 @@ import net.lyzrex.syntrix.lobby.SyntrixLobby;
 import net.lyzrex.syntrix.lobby.core.MessageService;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 
@@ -27,6 +28,13 @@ public final class MessageUtil {
     public static void sendRaw(CommandSender sender, SyntrixLobby plugin, String messageMiniMessage) {
         if (messageMiniMessage == null || messageMiniMessage.isBlank()) return;
         sender.sendMessage(mm.deserialize(prefix(plugin) + messageMiniMessage));
+    }
+
+    public static void sendActionBar(Player player, @Nullable String miniMessage) {
+        if (player == null || miniMessage == null || miniMessage.isBlank()) {
+            return;
+        }
+        player.sendActionBar(mm.deserialize(miniMessage));
     }
 
     public static void sendCooldown(Player p, SyntrixLobby plugin, double secondsLeft) {

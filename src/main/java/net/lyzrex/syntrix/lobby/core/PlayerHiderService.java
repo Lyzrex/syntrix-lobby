@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby.core;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -179,7 +180,7 @@ public final class PlayerHiderService implements Listener {
     }
 
     private void play(Player p, String sound, float vol, float pitch) {
-        try { p.playSound(p.getLocation(), Sound.valueOf(sound), vol, pitch); }
-        catch (IllegalArgumentException ex) { p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, vol, pitch); }
+        Sound resolved = SoundUtil.resolve(sound, Sound.UI_BUTTON_CLICK);
+        p.playSound(p.getLocation(), resolved, vol, pitch);
     }
 }

@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby.listeners;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -41,6 +42,10 @@ public final class NavigatorListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onUse(PlayerInteractEvent e) {
+        Action action = e.getAction();
+        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
         if (e.getItem() == null || !e.getItem().hasItemMeta()) return;
         ItemMeta meta = e.getItem().getItemMeta();
         if (!meta.getPersistentDataContainer().has(SyntrixLobby.NAV_TAG, PersistentDataType.BYTE)) return;
@@ -180,9 +185,10 @@ public final class NavigatorListener implements Listener {
         float vol = (float) plugin.getConfig().getDouble(volPath, 0.8);
         float pit = (float) plugin.getConfig().getDouble(pitchPath, 1.2);
         try {
-            p.playSound(p.getLocation(), Sound.valueOf(sn.toUpperCase(Locale.ROOT)), vol, pit);
-        } catch (IllegalArgumentException ignored) {
-            p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, vol, pit);
+            Sound sound = SoundUtil.resolve(sn, Sound.UI_BUTTON_CLICK);
+            p.playSound(p.getLocation(), sound, vol, pit);
+        } finally {
+
         }
     }
 
