@@ -14,9 +14,8 @@ public final class CommandManager {
         add(plugin, "setspawn", new SetSpawnCommand(plugin));
         add(plugin, "lobbyreload", new LobbyReloadCommand(plugin));
         add(plugin, "build", new BuildCommand(plugin));
-        add(plugin, "playerinfo", new PlayerInfoCommand(plugin));
         add(plugin, "setheight", new SetHeightCommand(plugin));
-        add(plugin, "vanish", new net.lythadmin.lobby.commands.VanishCommand(plugin, plugin.vanish()));
+        add(plugin, "vanish", new VanishCommand(plugin));
         add(plugin, "time", new LobbyTimeCommand(plugin));
         add(plugin, "skull", new SkullCommand(plugin));
         add(plugin, "fly", new FlyCommand(plugin));

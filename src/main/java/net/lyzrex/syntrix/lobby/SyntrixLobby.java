@@ -3,11 +3,10 @@ package net.lyzrex.syntrix.lobby;
 import net.lyzrex.syntrix.lobby.core.DeathLogService;
 import net.lyzrex.syntrix.lobby.core.JumpAndRunService;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
-import net.lyzrex.syntrix.lobby.core.PlayerSessionService;
 import net.lyzrex.syntrix.lobby.core.VanishService;
-import net.lyzrex.syntrix.lobby.db.DBManager;
 import net.lyzrex.syntrix.lobby.manager.CommandManager;
 import net.lyzrex.syntrix.lobby.manager.ListenerManager;
+import net.lyzrex.syntrix.lobby.core.DoubleJumpService;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -45,16 +44,12 @@ public final class SyntrixLobby extends JavaPlugin {
     private BukkitTask weatherTask;
 
 
-    private DBManager db;
     private VanishService vanish;
     private PlayerHiderService playerHider;
-    private PlayerSessionService sessions;
     private DeathLogService deathLogs;
     private JumpAndRunService jumpAndRun;
 
-    public DBManager db() {
-        return db;
-    }
+    private DoubleJumpService doubleJump;
 
     public VanishService vanish() {
         return vanish;
@@ -64,16 +59,16 @@ public final class SyntrixLobby extends JavaPlugin {
         return playerHider;
     }
 
-    public PlayerSessionService sessions() {
-        return sessions;
-    }
-
     public DeathLogService deathLogs() {
         return deathLogs;
     }
 
     public JumpAndRunService jumpAndRun() {
         return jumpAndRun;
+    }
+
+    public DoubleJumpService doubleJump() {
+        return doubleJump;
     }
 
     @Override
@@ -93,22 +88,20 @@ public final class SyntrixLobby extends JavaPlugin {
         setupMessages();
 
 
-        this.db = new DBManager(this);
-        this.db.init();
 
         this.vanish = new VanishService(this);
         this.vanish.init();
 
         this.playerHider = new PlayerHiderService(this);
 
-        this.sessions = new PlayerSessionService(this);
-        this.sessions.init();
 
         this.deathLogs = new DeathLogService(this);
         this.deathLogs.init();
 
         this.jumpAndRun = new JumpAndRunService(this);
         this.jumpAndRun.init();
+
+        this.doubleJump = new DoubleJumpService(this);
 
         ListenerManager.registerAll(this);
         CommandManager.registerAll(this);
@@ -127,10 +120,8 @@ public final class SyntrixLobby extends JavaPlugin {
         cancelTask(particleTask);
         cancelTask(weatherTask);
 
-        if (sessions != null) sessions.shutdown();
         if (deathLogs != null) deathLogs.shutdown();
         if (jumpAndRun != null) jumpAndRun.shutdown();
-        if (db != null) db.shutdown();
         timeTask = null;
         particleTask = null;
         weatherTask = null;
@@ -174,21 +165,14 @@ public final class SyntrixLobby extends JavaPlugin {
         setupMessages();
 
 
-        if (this.db == null) {
-            this.db = new DBManager(this);
-        } else {
-            this.db.shutdown();
-        }
-        this.db.init();
-
-
         if (this.vanish != null) this.vanish.refreshAll();
         if (this.playerHider != null) this.playerHider.refreshAll();
-        if (this.sessions != null) this.sessions.refreshAll();
         if (this.deathLogs == null) this.deathLogs = new DeathLogService(this);
         this.deathLogs.reload();
         if (this.jumpAndRun == null) this.jumpAndRun = new JumpAndRunService(this);
         this.jumpAndRun.reload();
+        if (this.doubleJump == null) this.doubleJump = new DoubleJumpService(this);
+        this.doubleJump.reload();
 
 
         restartTimeControl();

@@ -3,12 +3,15 @@ package net.lyzrex.syntrix.lobby.listeners;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.utils.MessageUtil;
+import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService.Mode;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -36,10 +39,8 @@ public final class PlayerHiderListener implements Listener {
     private final PlayerHiderService service;
     private static final MiniMessage mm = MiniMessage.miniMessage();
 
-
     private final NamespacedKey GUI_KEY;
     private final NamespacedKey ITEM_TAG;
-
 
     private final Map<UUID, Long> cooldownMs = new ConcurrentHashMap<>();
 
@@ -49,8 +50,6 @@ public final class PlayerHiderListener implements Listener {
         this.GUI_KEY  = new NamespacedKey(plugin, "player_hider_gui");
         this.ITEM_TAG = new NamespacedKey(plugin, "player_hider_item");
     }
-
-
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onUse(PlayerInteractEvent e) {
@@ -78,15 +77,11 @@ public final class PlayerHiderListener implements Listener {
         openGui(e.getPlayer());
     }
 
-
-
     private void openGui(Player p) {
         String title = plugin.messages().getString("playerHider.gui.title", "<#2AF598>Player Hider</#2AF598>");
         Inventory inv = Bukkit.createInventory(p, 9, mm.deserialize(title));
 
-
         applyFiller(inv);
-
 
         inv.setItem(2, guiItem(Material.LIME_DYE,   "playerHider.gui.all",  "<green>Show everyone</green>", Mode.ALL));
         inv.setItem(4, guiItem(Material.GOLD_INGOT, "playerHider.gui.vip",  "<gold>VIP only</gold>",        Mode.VIP));
@@ -103,7 +98,6 @@ public final class PlayerHiderListener implements Listener {
         p.openInventory(inv);
     }
 
-
     private boolean isOurGui(org.bukkit.inventory.InventoryView view) {
         String expectedMini = plugin.messages().getString("playerHider.gui.title", "<#2AF598>Player Hider</#2AF598>");
         String expectedPlain = PlainTextComponentSerializer.plainText().serialize(mm.deserialize(expectedMini));
@@ -111,16 +105,13 @@ public final class PlayerHiderListener implements Listener {
         return currentPlain.equalsIgnoreCase(expectedPlain);
     }
 
-
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p)) return;
 
         if (!isOurGui(e.getView())) return;
 
-
         e.setCancelled(true);
-
 
         if (e.getClickedInventory() == null || e.getView().getTopInventory() != e.getClickedInventory()) return;
 
@@ -141,7 +132,7 @@ public final class PlayerHiderListener implements Listener {
             case VIP  -> "playerHider.set.vip";
             case NONE -> "playerHider.set.none";
         };
-        p.sendActionBar(mm.deserialize(plugin.messages().getString(key, "<#8799ae>Updated.</#8799ae>")));
+        MessageUtil.sendActionBar(p, plugin.messages().getString(key, "<#8799ae>Updated.</#8799ae>"));
 
         if (plugin.getConfig().getBoolean("playerHider.gui.sound.select.enabled", true)) {
             play(p,
@@ -154,15 +145,12 @@ public final class PlayerHiderListener implements Listener {
         p.closeInventory();
     }
 
-
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onDrag(InventoryDragEvent e) {
         if (isOurGui(e.getView())) {
             e.setCancelled(true);
         }
     }
-
-
 
     private void applyFiller(Inventory inv) {
         ConfigurationSection sec = plugin.getConfig().getConfigurationSection("playerHider.gui.filler");
@@ -197,7 +185,6 @@ public final class PlayerHiderListener implements Listener {
             }
         }
 
-
         Bukkit.getScheduler().runTask(plugin, () -> {
             for (int r = 0; r < rows; r++) {
                 String line = pattern.get(r);
@@ -227,8 +214,6 @@ public final class PlayerHiderListener implements Listener {
         });
     }
 
-
-
     private ItemStack guiItem(Material mat, String msgKey, String fallback, Mode mode) {
         ItemStack it = new ItemStack(mat);
         ItemMeta meta = it.getItemMeta();
@@ -240,12 +225,12 @@ public final class PlayerHiderListener implements Listener {
     }
 
     private void play(Player p, String name, float vol, float pitch) {
-        Sound s;
-        try { s = Sound.valueOf(name.toUpperCase(Locale.ROOT)); }
-        catch (IllegalArgumentException ex) { s = Sound.UI_BUTTON_CLICK; }
-        p.playSound(p.getLocation(), s, vol, pitch);
+        if (p == null) {
+            return;
+        }
+        Sound sound = SoundUtil.resolve(name, Sound.UI_BUTTON_CLICK);
+        p.playSound(p.getLocation(), sound, SoundCategory.MASTER, vol, pitch);
     }
-
 
     public ItemStack buildHotbarItem() {
         String matName = plugin.getConfig().getString("playerHider.item.material", "NETHER_STAR");
@@ -263,7 +248,9 @@ public final class PlayerHiderListener implements Listener {
         var lore = plugin.messages().getStringList("playerHider.item.lore");
         if (!lore.isEmpty()) meta.lore(lore.stream().map(mm::deserialize).toList());
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
-        meta.getPersistentDataContainer().set(ITEM_TAG, PersistentDataType.BYTE, (byte) 1);
+        var data = meta.getPersistentDataContainer();
+        data.set(ITEM_TAG, PersistentDataType.BYTE, (byte) 1);
+        data.set(SyntrixLobby.ITEM_LOCK, PersistentDataType.BYTE, (byte) 1);
         it.setItemMeta(meta);
         return it;
     }

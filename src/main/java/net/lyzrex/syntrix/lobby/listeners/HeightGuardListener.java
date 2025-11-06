@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -30,7 +31,8 @@ public final class HeightGuardListener implements Listener {
     }
 
     private double cfgHeight() {
-        return plugin.getConfig().getDouble("safety.deathHeight", Double.NEGATIVE_INFINITY);
+        return plugin.getConfig().getDouble("protections.deathHeight",
+                plugin.getConfig().getDouble("safety.deathHeight", Double.NEGATIVE_INFINITY));
     }
 
     private Location lobbySpawn() {
@@ -55,6 +57,12 @@ public final class HeightGuardListener implements Listener {
         Player p = e.getPlayer();
         double h = cfgHeight();
         if (h == Double.NEGATIVE_INFINITY) return;
+        String perm = plugin.getConfig().getString("protections.bypass-permission", "syntrix.protections.bypass");
+        boolean inBuildMode = p.getPersistentDataContainer().has(SyntrixLobby.BUILD_MODE, PersistentDataType.BYTE);
+        boolean bypass = inBuildMode && (perm == null || perm.isBlank() || p.hasPermission(perm));
+        if (bypass) {
+            return;
+        }
 
         if (e.getTo() != null && e.getTo().getY() <= h && p.getHealth() > 0.0) {
             deathByHeight.add(p.getUniqueId());
@@ -69,8 +77,8 @@ public final class HeightGuardListener implements Listener {
 
         e.deathMessage(null);
         ms.send(p, plugin.messages().getString(
-                "sethight.killed",
-                "<gray>You fell below the allowed height.</gray>"
+                "commands.setheight.killed",
+                "<gray>You have been teleported to the lobby spawn.</gray>"
         ));
     }
 

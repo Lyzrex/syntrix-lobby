@@ -54,6 +54,11 @@ public final class BuildCommand extends BaseCommand {
             BYPASS_PLAYERS.remove(p.getUniqueId());
             p.setGameMode(GameMode.ADVENTURE);
 
+            if (plugin.getConfig().getBoolean("build.clear-on-disable", true)) {
+                p.getInventory().clear();
+                p.getInventory().setArmorContents(null);
+            }
+
             PlayerJoinListener.giveLobbyLoadout(plugin, p);
 
             ms.send(p, plugin.messages().getString("commands.build.disabled",

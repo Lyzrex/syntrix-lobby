@@ -25,11 +25,6 @@ commands:
     description: Toggles build mode (creative, no lobby item enforcement).
     usage: "/build"
     permission: syntrix.build
-  playerinfo:
-    description: Shows database, status, and account history for a player or ID.
-    usage: "/playerinfo <player|#id|id <id>> | /playerinfo ip <player|#id|id <id>>"
-    permission: syntrix.playerinfo
-    aliases: [userinfo]
   skull:
     description: Gives you the head of a player.
     usage: "/skull <player> [amount]"
@@ -61,7 +56,6 @@ permissions:
   syntrix.setspawn:   { description: Allows /setspawn,       default: op }
   syntrix.reload:     { description: Allows /lobbyreload,    default: op }
   syntrix.build:      { description: Allows /build,          default: op }
-  syntrix.playerinfo: { description: Allows /playerinfo,     default: op }
   syntrix.skull:      { description: Allows /skull,          default: op }
   syntrix.setheight:  { description: Allows /setheight,      default: op }
   syntrix.vanish:     { description: Allows /vanish,         default: op }
@@ -70,6 +64,7 @@ permissions:
   syntrix.fly.others: { description: Allows /fly on others,  default: op }
   syntrix.fly.auto: { description: Auto enable flight on join, default: op }
   syntrix.jumpandrun.hologram: { description: Manage the Jump & Run hologram, default: op }
+  syntrix.protections.bypass: { description: Bypass lobby protections, default: op }
 
   syntrix.vanish.see:  { description: See vanished players,     default: op }
   syntrix.vanish.auto: { description: Auto-vanish on join,      default: op }
