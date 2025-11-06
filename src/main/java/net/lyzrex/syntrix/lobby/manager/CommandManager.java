@@ -20,6 +20,7 @@ public final class CommandManager {
         add(plugin, "skull", new SkullCommand(plugin));
         add(plugin, "fly", new FlyCommand(plugin));
         add(plugin, "jumpandrunholo", new JumpAndRunHologramCommand(plugin));
+        add(plugin, "stats", new StatsCommand(plugin));
     }
 
     private static void add(SyntrixLobby plugin, String name, TabExecutor exec) {

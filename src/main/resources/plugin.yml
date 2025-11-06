@@ -50,6 +50,10 @@ commands:
     description: Manages the Jump & Run leaderboard hologram.
     usage: "/jumpandrunholo <spawn|remove|update>"
     permission: syntrix.jumpandrun.hologram
+  stats:
+    description: Shows personal lobby statistics.
+    usage: "/stats jumpandrun"
+    permission: syntrix.stats
 
 permissions:
   syntrix.spawn:      { description: Allows /spawn,          default: true }
@@ -65,6 +69,7 @@ permissions:
   syntrix.fly.auto: { description: Auto enable flight on join, default: op }
   syntrix.jumpandrun.hologram: { description: Manage the Jump & Run hologram, default: op }
   syntrix.protections.bypass: { description: Bypass lobby protections, default: op }
+  syntrix.stats: { description: Allows /stats command, default: true }
 
   syntrix.vanish.see:  { description: See vanished players,     default: op }
   syntrix.vanish.auto: { description: Auto-vanish on join,      default: op }
