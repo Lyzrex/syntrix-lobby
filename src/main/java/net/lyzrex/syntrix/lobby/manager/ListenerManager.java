@@ -17,6 +17,7 @@ public final class ListenerManager {
         pm.registerEvents(new LobbyProtectionListener(plugin), plugin);
         pm.registerEvents(new InventoryGuardListener(plugin), plugin);
         pm.registerEvents(new NavigatorListener(plugin), plugin);
+        pm.registerEvents(plugin.playerHider(), plugin);
         pm.registerEvents(new PlayerHiderListener(plugin, plugin.playerHider()), plugin);
         pm.registerEvents(new LobbyItemEnforcerListener(plugin), plugin);
         pm.registerEvents(new JumpAndRunListener(plugin, plugin.jumpAndRun()), plugin);
@@ -24,7 +25,5 @@ public final class ListenerManager {
         pm.registerEvents(plugin.doubleJump(), plugin);
         pm.registerEvents(new HeightGuardListener(plugin), plugin);
         pm.registerEvents(new SignColorListener(plugin), plugin);
-        pm.registerEvents(new DeathLogListener(plugin), plugin);
-
     }
 }

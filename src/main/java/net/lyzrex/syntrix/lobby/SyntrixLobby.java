@@ -1,6 +1,5 @@
 package net.lyzrex.syntrix.lobby;
 
-import net.lyzrex.syntrix.lobby.core.DeathLogService;
 import net.lyzrex.syntrix.lobby.core.JumpAndRunService;
 import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
 import net.lyzrex.syntrix.lobby.core.VanishService;
@@ -33,6 +32,7 @@ public final class SyntrixLobby extends JavaPlugin {
     public static NamespacedKey JNR_ACTIVE;
     public static NamespacedKey AUTOJOIN_OFF;
     public static NamespacedKey BUILD_MODE;
+    public static NamespacedKey FLY_STATE;
 
 
     private FileConfiguration config;
@@ -46,7 +46,6 @@ public final class SyntrixLobby extends JavaPlugin {
 
     private VanishService vanish;
     private PlayerHiderService playerHider;
-    private DeathLogService deathLogs;
     private JumpAndRunService jumpAndRun;
 
     private DoubleJumpService doubleJump;
@@ -57,10 +56,6 @@ public final class SyntrixLobby extends JavaPlugin {
 
     public PlayerHiderService playerHider() {
         return playerHider;
-    }
-
-    public DeathLogService deathLogs() {
-        return deathLogs;
     }
 
     public JumpAndRunService jumpAndRun() {
@@ -95,9 +90,6 @@ public final class SyntrixLobby extends JavaPlugin {
         this.playerHider = new PlayerHiderService(this);
 
 
-        this.deathLogs = new DeathLogService(this);
-        this.deathLogs.init();
-
         this.jumpAndRun = new JumpAndRunService(this);
         this.jumpAndRun.init();
 
@@ -120,7 +112,6 @@ public final class SyntrixLobby extends JavaPlugin {
         cancelTask(particleTask);
         cancelTask(weatherTask);
 
-        if (deathLogs != null) deathLogs.shutdown();
         if (jumpAndRun != null) jumpAndRun.shutdown();
         timeTask = null;
         particleTask = null;
@@ -137,6 +128,7 @@ public final class SyntrixLobby extends JavaPlugin {
         JNR_ACTIVE = new NamespacedKey(this, "jnr_trigger");
         AUTOJOIN_OFF = new NamespacedKey(this, "autojoin_off");
         BUILD_MODE = new NamespacedKey(this, "build_mode");
+        FLY_STATE = new NamespacedKey(this, "fly_state");
     }
 
     private void setupConfig() {
@@ -167,8 +159,6 @@ public final class SyntrixLobby extends JavaPlugin {
 
         if (this.vanish != null) this.vanish.refreshAll();
         if (this.playerHider != null) this.playerHider.refreshAll();
-        if (this.deathLogs == null) this.deathLogs = new DeathLogService(this);
-        this.deathLogs.reload();
         if (this.jumpAndRun == null) this.jumpAndRun = new JumpAndRunService(this);
         this.jumpAndRun.reload();
         if (this.doubleJump == null) this.doubleJump = new DoubleJumpService(this);

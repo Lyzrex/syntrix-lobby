@@ -8,7 +8,10 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -54,35 +57,60 @@ public final class PlayerHiderService implements Listener {
     }
 
     private void updateVisibility(Player viewer) {
-        Mode mode = getMode(viewer);
-        boolean vipOnly = mode == Mode.VIP;
-        boolean showNone = mode == Mode.NONE;
-
         for (Player target : Bukkit.getOnlinePlayers()) {
-            if (target.equals(viewer)) continue;
-
-            String exempt = plugin.getConfig().getString("playerHider.exempt-permission", "syntrix.hider.exempt");
-            if (exempt != null && !exempt.isBlank() && target.hasPermission(exempt)) {
-                viewer.showPlayer(plugin, target);
+            if (target.equals(viewer)) {
                 continue;
             }
-
-            if (showNone) {
-                viewer.hidePlayer(plugin, target);
-            } else if (vipOnly) {
-                String vipPerm = plugin.getConfig().getString("playerHider.vip-permission", "syntrix.vip");
-                if (vipPerm != null && !vipPerm.isBlank() && target.hasPermission(vipPerm)) {
-                    viewer.showPlayer(plugin, target);
-                } else viewer.hidePlayer(plugin, target);
-            } else {
-                viewer.showPlayer(plugin, target);
-            }
+            applyVisibility(viewer, target);
         }
+    }
+    private void applyVisibility(Player viewer, Player target) {
+        Mode mode = getMode(viewer);
+        String exempt = plugin.getConfig().getString("playerHider.exempt-permission", "syntrix.hider.exempt");
+        if (exempt != null && !exempt.isBlank() && target.hasPermission(exempt)) {
+            viewer.showPlayer(plugin, target);
+            return;
+        }
+
+        if (mode == Mode.NONE) {
+            viewer.hidePlayer(plugin, target);
+            return;
+        }
+        if (mode == Mode.VIP) {
+            String vipPerm = plugin.getConfig().getString("playerHider.vip-permission", "syntrix.vip");
+            if (vipPerm != null && !vipPerm.isBlank() && target.hasPermission(vipPerm)) {
+                viewer.showPlayer(plugin, target);
+            } else {
+                viewer.hidePlayer(plugin, target);
+            }
+            return;
+        }
+        viewer.showPlayer(plugin, target);
     }
 
     public void applyForViewer(Player viewer) { updateVisibility(viewer); }
     public void refreshAllViewers() { for (Player p : Bukkit.getOnlinePlayers()) updateVisibility(p); }
     public void refreshAll() { refreshAllViewers(); }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        Player joined = event.getPlayer();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            updateVisibility(joined);
+            for (Player viewer : Bukkit.getOnlinePlayers()) {
+                if (!viewer.equals(joined)) {
+                    applyVisibility(viewer, joined);
+                }
+            }
+        });
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        playerModes.remove(event.getPlayer().getUniqueId());
+        Bukkit.getScheduler().runTask(plugin, this::refreshAllViewers);
+    }
+
 
     public void openGui(Player p) {
         int rows = 1;

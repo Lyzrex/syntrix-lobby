@@ -69,15 +69,25 @@ public final class JumpAndRunService {
     public LeaderboardResult recordCompletion(Player player, long durationMillis) {
         UUID uuid = player.getUniqueId();
         LeaderboardEntry previous = records.get(uuid);
-        boolean isNewRecord = previous == null || durationMillis < previous.bestTimeMillis();
-        if (isNewRecord) {
-            LeaderboardEntry updated = new LeaderboardEntry(uuid, player.getName(), durationMillis);
-            records.put(uuid, updated);
-            saveData();
+
+        int completions = previous == null ? 1 : previous.completions() + 1;
+        long previousBest = previous == null ? Long.MAX_VALUE : previous.bestTimeMillis();
+        long previousTimestamp = previous == null ? 0L : previous.bestTimestampMillis();
+        String name = player.getName();
+
+        boolean isNewRecord = durationMillis < previousBest;
+        long bestTime = isNewRecord ? durationMillis : previousBest;
+        long recordTimestamp = isNewRecord ? System.currentTimeMillis() : previousTimestamp;
+
+        LeaderboardEntry updated = new LeaderboardEntry(uuid, name, bestTime, recordTimestamp, completions);
+        records.put(uuid, updated);
+        saveData();
+
+        if (isNewRecord || previous == null || !previous.name().equals(name)) {
             updateHologram();
-            return new LeaderboardResult(durationMillis, true);
         }
-        return new LeaderboardResult(previous.bestTimeMillis(), false);
+
+        return new LeaderboardResult(updated.bestTimeMillis(), isNewRecord);
     }
 
     public List<LeaderboardEntry> top(int limit) {
@@ -164,8 +174,13 @@ public final class JumpAndRunService {
                 }
                 long time = section.getLong(key + ".best", Long.MAX_VALUE);
                 String name = section.getString(key + ".name", uuid.toString());
+                int completions = section.getInt(key + ".completions", time < Long.MAX_VALUE ? 1 : 0);
+                long timestamp = section.getLong(key + ".timestamp", 0L);
                 if (time < Long.MAX_VALUE) {
-                    records.put(uuid, new LeaderboardEntry(uuid, name, time));
+                    if (completions <= 0) {
+                        completions = 1;
+                    }
+                    records.put(uuid, new LeaderboardEntry(uuid, name, time, timestamp, completions));
                 }
             }
         }
@@ -181,6 +196,8 @@ public final class JumpAndRunService {
             String key = entry.uuid().toString();
             section.set(key + ".name", entry.name());
             section.set(key + ".best", entry.bestTimeMillis());
+            section.set(key + ".completions", entry.completions());
+            section.set(key + ".timestamp", entry.bestTimestampMillis());
         }
         saveSilently();
     }
@@ -266,10 +283,24 @@ public final class JumpAndRunService {
         return String.format(Locale.US, "%02d:%02d.%02d", minutes, seconds, centiseconds);
     }
 
+    public PlayerStats stats(UUID uuid) {
+        LeaderboardEntry entry = records.get(uuid);
+        if (entry == null) {
+            return new PlayerStats(0, null, null);
+        }
+        Long bestTime = entry.bestTimeMillis() >= Long.MAX_VALUE ? null : entry.bestTimeMillis();
+        Long timestamp = entry.bestTimestampMillis() <= 0 ? null : entry.bestTimestampMillis();
+        return new PlayerStats(entry.completions(), bestTime, timestamp);
+    }
+
     public record LeaderboardResult(long bestTimeMillis, boolean newRecord) {
     }
 
-    public record LeaderboardEntry(UUID uuid, String name, long bestTimeMillis) {
+    public record LeaderboardEntry(UUID uuid, String name, long bestTimeMillis, long bestTimestampMillis,
+                                   int completions) {
+    }
+
+    public record PlayerStats(int completions, Long bestTimeMillis, Long bestTimestampMillis) {
     }
 
     private final class SimpleHologram {

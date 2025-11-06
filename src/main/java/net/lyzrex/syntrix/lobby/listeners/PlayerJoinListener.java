@@ -14,6 +14,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -79,11 +80,34 @@ public final class PlayerJoinListener implements Listener {
     }
 
     @EventHandler
+    public void onDeath(PlayerDeathEvent event) {
+        Player player = event.getEntity();
+        if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) {
+            return;
+        }
+        byte state = 0;
+        if (player.getAllowFlight()) {
+            state |= 0x1;
+        }
+        if (player.isFlying()) {
+            state |= 0x2;
+        }
+        if (state != 0) {
+            player.getPersistentDataContainer().set(SyntrixLobby.FLY_STATE, PersistentDataType.BYTE, state);
+        }
+    }
+
+    @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             giveLobbyLoadout(plugin, player);
-            plugin.doubleJump().refresh(player);
+            var doubleJump = plugin.doubleJump();
+            if (doubleJump != null) {
+                doubleJump.refresh(player);
+            }
+            applyAutoFlight(player);
+            restorePersistedFlight(player);
         });
     }
 
@@ -149,10 +173,34 @@ public final class PlayerJoinListener implements Listener {
             return;
         }
         boolean changed = FlightUtil.setFlight(player, true);
-        plugin.doubleJump().disableForFlight(player);
+        var doubleJump = plugin.doubleJump();
+        if (doubleJump != null) {
+            doubleJump.disableForFlight(player);
+        }
         if (changed && plugin.getConfig().getBoolean("fly.messages", true)) {
             MessageUtil.send(player, plugin, "fly.auto-enabled",
                     "<gray>Flight enabled automatically.</gray>");
+        }
+    }
+
+    private void restorePersistedFlight(Player player) {
+        var pdc = player.getPersistentDataContainer();
+        Byte data = pdc.get(SyntrixLobby.FLY_STATE, PersistentDataType.BYTE);
+        if (data == null) {
+            return;
+        }
+        pdc.remove(SyntrixLobby.FLY_STATE);
+        boolean allow = (data & 0x1) != 0;
+        boolean flying = (data & 0x2) != 0;
+        if (!allow) {
+            return;
+        }
+        player.setAllowFlight(true);
+        player.setFallDistance(0.0F);
+        player.setFlying(flying);
+        var doubleJump = plugin.doubleJump();
+        if (doubleJump != null) {
+            doubleJump.disableForFlight(player);
         }
     }
 }

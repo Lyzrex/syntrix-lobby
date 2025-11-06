@@ -42,6 +42,30 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class JumpAndRunListener implements Listener {
 
     private static final double STEP_REACH_DISTANCE_SQ = 0.96D;
+    private static final double MIN_STEP_HORIZONTAL_DISTANCE_SQ = 3.05D;
+    private static final int MIN_STEP_BLOCK_SEPARATION = 2;
+    private static final double MIN_STEP_VERTICAL_DELTA = 0.6D;
+    private static final long STATUS_DISPLAY_DURATION_MS = 3000L;
+    private static final int TOTAL_STEPS = 40;
+    private static final double HEIGHT_CAP_EPSILON = 0.01D;
+    private static final Material CHECKPOINT_MATERIAL = Material.BLACK_STAINED_GLASS;
+    private static final Material[] STEP_COLORS = {
+            Material.WHITE_STAINED_GLASS,
+            Material.ORANGE_STAINED_GLASS,
+            Material.MAGENTA_STAINED_GLASS,
+            Material.LIGHT_BLUE_STAINED_GLASS,
+            Material.YELLOW_STAINED_GLASS,
+            Material.LIME_STAINED_GLASS,
+            Material.PINK_STAINED_GLASS,
+            Material.GRAY_STAINED_GLASS,
+            Material.LIGHT_GRAY_STAINED_GLASS,
+            Material.CYAN_STAINED_GLASS,
+            Material.PURPLE_STAINED_GLASS,
+            Material.BLUE_STAINED_GLASS,
+            Material.BROWN_STAINED_GLASS,
+            Material.GREEN_STAINED_GLASS,
+            Material.RED_STAINED_GLASS
+    };
 
     private final SyntrixLobby plugin;
     private final JumpAndRunService service;
@@ -73,7 +97,7 @@ public final class JumpAndRunListener implements Listener {
 
     private static final class Run {
         final List<Location> steps;
-        final Material platformMaterial;
+        final Material playerMaterial;
         final Map<Block, BlockSnapshot> originals = new HashMap<>();
         final double cancelThreshold;
         final Set<Integer> checkpoints; // 0-based indexes
@@ -86,16 +110,20 @@ public final class JumpAndRunListener implements Listener {
         int checkpointIndex;
         BukkitRunnable task;
         long startNano;
+        long displayBaseNano;
+        long checkpointElapsedMillis;
+        String persistentStatus;
+        long statusExpiryMillis;
 
         Run(List<Location> steps,
-            Material platformMaterial,
+            Material playerMaterial,
             double cancelThreshold,
             Set<Integer> checkpoints,
             boolean restoreFlight,
             boolean restoreFlying,
             boolean restoreDoubleJump) {
             this.steps = steps;
-            this.platformMaterial = platformMaterial;
+            this.playerMaterial = playerMaterial;
             this.cancelThreshold = cancelThreshold;
             this.checkpoints = checkpoints;
             this.restoreFlight = restoreFlight;
@@ -106,6 +134,10 @@ public final class JumpAndRunListener implements Listener {
             this.nextIndex = Math.min(1, steps.size() - 1);
             this.checkpointIndex = 0;
             this.startNano = System.nanoTime();
+            this.displayBaseNano = this.startNano;
+            this.checkpointElapsedMillis = 0L;
+            this.persistentStatus = "";
+            this.statusExpiryMillis = 0L;
         }
     }
 
@@ -122,8 +154,34 @@ public final class JumpAndRunListener implements Listener {
         }
     }
 
+    private double resolveMaxStepY(Location location) {
+        World world = location.getWorld();
+        return world == null ? Double.POSITIVE_INFINITY : world.getMaxHeight();
+    }
+
+    private boolean isNearHeightCap(double y, double maxStepY) {
+        return y >= maxStepY - HEIGHT_CAP_EPSILON;
+    }
+
     private boolean hasBuildMode(Player player) {
         return player.getPersistentDataContainer().has(SyntrixLobby.BUILD_MODE, PersistentDataType.BYTE);
+    }
+
+    private void sendFailureActionBar(Player player, String messageKey, String fallback) {
+        String message = plugin.messages().getString(messageKey, fallback);
+        if (message == null || message.isBlank()) {
+            message = fallback;
+        }
+        MessageUtil.sendActionBar(player, message);
+    }
+
+    private Material selectPlayerMaterial(Player player, Material fallback) {
+        if (STEP_COLORS.length == 0) {
+            return fallback;
+        }
+        int index = Math.floorMod(player.getUniqueId().hashCode(), STEP_COLORS.length);
+        Material chosen = STEP_COLORS[index];
+        return chosen != null ? chosen : fallback;
     }
 
     @EventHandler
@@ -163,7 +221,7 @@ public final class JumpAndRunListener implements Listener {
 
         String permission = plugin.getConfig().getString("items.jumpAndRun.permission", "");
         if (permission != null && !permission.isBlank() && !player.hasPermission(permission)) {
-            MessageUtil.send(player, plugin, "jumpandrun.no-permission",
+            sendFailureActionBar(player, "jumpandrun.no-permission",
                     "<red>You do not have permission to start Jump & Run.</red>");
 
             event.setCancelled(true);
@@ -177,7 +235,7 @@ public final class JumpAndRunListener implements Listener {
             if (player.isSneaking()) {
                 stopRun(player, true);
             } else {
-                MessageUtil.send(player, plugin, "jumpandrun.already-running",
+                sendFailureActionBar(player, "jumpandrun.already-running",
                         "<red>You already have an active Jump & Run. Sneak-right-click to cancel.</red>");
             }
             return;
@@ -187,47 +245,48 @@ public final class JumpAndRunListener implements Listener {
     }
 
     private void startRun(Player player) {
-        int totalSteps = Math.max(2, plugin.getConfig().getInt("items.jumpAndRun.steps", 40));
+        int totalSteps = TOTAL_STEPS;
         double cancelBelow = plugin.getConfig().getDouble("items.jumpAndRun.cancel-fall-below", 2.0);
 
-        Material platformMaterial = Material.matchMaterial(
+        Material defaultMaterial = Material.matchMaterial(
                 plugin.getConfig().getString("items.jumpAndRun.block-material", "LIGHT_BLUE_STAINED_GLASS")
         );
-
-        if (platformMaterial == null) {
-            platformMaterial = Material.LIGHT_BLUE_STAINED_GLASS;
+        if (defaultMaterial == null) {
+            defaultMaterial = Material.LIGHT_BLUE_STAINED_GLASS;
         }
+        Material playerMaterial = selectPlayerMaterial(player, defaultMaterial);
 
         List<DifficultySegment> segments = loadSegments(totalSteps);
         Set<Integer> checkpoints = loadCheckpoints(totalSteps);
         List<Location> steps = buildSteps(player, totalSteps, segments);
-        if (steps.size() < 2) {
+        if (steps.size() != totalSteps) {
             steps = buildEmergencyPath(player, totalSteps);
         }
-        if (steps.size() < 2) {
-            MessageUtil.send(player, plugin, "jumpandrun.failed",
+        if (steps.size() != totalSteps) {
+            sendFailureActionBar(player, "jumpandrun.failed",
                     "<red>No valid Jump & Run path could be generated here.</red>");
             return;
         }
 
         UUID id = player.getUniqueId();
-        boolean doubleJumpActive = !plugin.doubleJump().isTemporarilyDisabled(id);
+        var doubleJump = plugin.doubleJump();
+        boolean doubleJumpActive = doubleJump != null && !doubleJump.isTemporarilyDisabled(id);
         boolean restoreFlight = !doubleJumpActive && player.getAllowFlight();
         boolean restoreFlying = player.isFlying();
-        if (doubleJumpActive) {
-            plugin.doubleJump().disableForFlight(player);
+        if (doubleJumpActive && doubleJump != null) {
+            doubleJump.disableForFlight(player);
         }
         player.setFlying(false);
         player.setAllowFlight(false);
         player.setFallDistance(0.0F);
 
-        Run run = new Run(steps, platformMaterial, cancelBelow, checkpoints, restoreFlight, restoreFlying, doubleJumpActive);
+        Run run = new Run(steps, playerMaterial, cancelBelow, checkpoints, restoreFlight, restoreFlying, doubleJumpActive);
         activeRuns.put(player.getUniqueId(), run);
 
-        placePlatform(run, steps.get(0));
+        placePlatform(run, 0);
 
         if (run.nextIndex > 0) {
-            placePlatform(run, steps.get(run.nextIndex));
+            placePlatform(run, run.nextIndex);
         }
         player.teleport(steps.get(0).clone().add(0, 0.2, 0));
 
@@ -255,6 +314,8 @@ public final class JumpAndRunListener implements Listener {
                 }
                 if (reachedStep(player, currentRun)) {
                     advance(player, currentRun);
+                } else {
+                    showActionBar(player, currentRun, null, null);
                 }
             }
         };
@@ -304,11 +365,12 @@ public final class JumpAndRunListener implements Listener {
 
     private void advance(Player player, Run run) {
         player.setFallDistance(0.0F);
-        restorePlatform(run, run.steps.get(run.lastReachedIndex));
+        restorePlatform(run, run.lastReachedIndex);
         run.lastReachedIndex = run.nextIndex;
 
         if (run.checkpoints.contains(run.lastReachedIndex)) {
             run.checkpointIndex = run.lastReachedIndex;
+            run.checkpointElapsedMillis = Duration.ofNanos(System.nanoTime() - run.displayBaseNano).toMillis();
             if (run.lastReachedIndex != 0) {
                 showActionBar(player, run, "jumpandrun.actionbar.checkpoint", "<green>Checkpoint reached!</green>");
                 playSound(player, "checkpoint", "block.note_block.bell");
@@ -321,13 +383,15 @@ public final class JumpAndRunListener implements Listener {
         }
 
         run.nextIndex = Math.min(run.lastReachedIndex + 1, run.steps.size() - 1);
-        placePlatform(run, run.steps.get(run.nextIndex));
+        placePlatform(run, run.nextIndex);
         showActionBar(player, run, null, null);
         playSound(player, "step", "block.note_block.hat");
     }
 
     private void showActionBar(Player player, Run run, String statusKey, String defaultStatus) {
-        long elapsedMillis = Duration.ofNanos(System.nanoTime() - run.startNano).toMillis();
+        long nowNano = System.nanoTime();
+        long elapsedMillis = Duration.ofNanos(nowNano - run.displayBaseNano).toMillis();
+        long nowMillis = System.currentTimeMillis();
         int totalSteps = Math.max(1, run.totalSteps);
         int currentIndex = Math.max(0, Math.min(run.steps.size() - 1, run.lastReachedIndex));
         int currentStep = Math.min(totalSteps, currentIndex + 1);
@@ -348,7 +412,16 @@ public final class JumpAndRunListener implements Listener {
         } else if (defaultStatus != null) {
             status = defaultStatus;
         }
-        status = fillPlaceholders(status, elapsedMillis, currentStep, totalSteps, leftText, checkpointStep);
+        if (status != null) {
+            status = fillPlaceholders(status, elapsedMillis, currentStep, totalSteps, leftText, checkpointStep);
+            run.persistentStatus = status == null ? "" : status;
+            run.statusExpiryMillis = nowMillis + STATUS_DISPLAY_DURATION_MS;
+        } else if (run.statusExpiryMillis > nowMillis && run.persistentStatus != null && !run.persistentStatus.isBlank()) {
+            status = fillPlaceholders(run.persistentStatus, elapsedMillis, currentStep, totalSteps, leftText, checkpointStep);
+        } else {
+            run.persistentStatus = "";
+        }
+
         if (status != null && !status.isBlank()) {
             if (!status.startsWith(" ")) {
                 status = " " + status;
@@ -422,10 +495,13 @@ public final class JumpAndRunListener implements Listener {
         showActionBar(player, run, "jumpandrun.actionbar.reset", "<red>Reset to checkpoint.</red>");
 
         run.lastReachedIndex = run.checkpointIndex;
+        long checkpointMillis = Math.max(0L, run.checkpointElapsedMillis);
+        long offsetNanos = Duration.ofMillis(checkpointMillis).toNanos();
+        run.displayBaseNano = System.nanoTime() - offsetNanos;
         run.nextIndex = Math.min(run.lastReachedIndex + 1, run.steps.size() - 1);
-        placePlatform(run, run.steps.get(run.lastReachedIndex));
+        placePlatform(run, run.lastReachedIndex);
         if (run.nextIndex > run.lastReachedIndex) {
-            placePlatform(run, run.steps.get(run.nextIndex));
+            placePlatform(run, run.nextIndex);
         }
         player.teleport(run.steps.get(run.lastReachedIndex).clone().add(0, 0.2, 0));
         player.setFallDistance(0.0F);
@@ -454,47 +530,53 @@ public final class JumpAndRunListener implements Listener {
         return run;
     }
 
-    private void cleanupPlatforms(Run run) {
-        for (Map.Entry<Block, BlockSnapshot> entry : run.originals.entrySet()) {
-            entry.getValue().restore(entry.getKey());
-        }
-        run.originals.clear();
-    }
-
     private List<Location> buildSteps(Player player, int steps, List<DifficultySegment> segments) {
         List<Location> locations = new ArrayList<>(steps);
         Location base = alignToBlockCenter(player.getLocation());
         base.setPitch(0);
+        double raisedY = Math.floor(base.getY()) + 1.0D;
+        base.setY(raisedY);
         locations.add(base);
 
         Vector direction = normalisedHorizontal(player.getLocation().getDirection());
         Vector left = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
         DifficultySegment fallback = segments.isEmpty()
-                ? new DifficultySegment(1, steps, 2.35, 0.65)
+                ? new DifficultySegment(1, steps, 2.75, 0.65)
                 : segments.get(segments.size() - 1);
 
         Location current = base;
         StepDirectionType previousType = StepDirectionType.STRAIGHT;
+        double maxStepY = resolveMaxStepY(base);
         for (int stepIndex = 2; stepIndex <= steps; stepIndex++) {
             DifficultySegment segment = findSegment(segments, stepIndex, fallback);
-            StepCandidate candidate = findNextStep(current, direction, left, segment, previousType);
+            StepCandidate candidate = findNextStep(current, direction, left, segment, previousType, maxStepY);
             if (candidate == null) {
-                candidate = fallbackCandidate(current, direction, left);
+                candidate = fallbackCandidate(current, direction, left, maxStepY);
             }
             if (candidate == null) {
                 break;
             }
-            locations.add(candidate.location());
+            Location next = candidate.location();
+            if (!isAcceptableStep(current, next, maxStepY)) {
+                stepIndex--;
+                continue;
+            }
+            locations.add(next);
             direction = candidate.heading();
             left = new Vector(-direction.getZ(), 0, direction.getX()).normalize();
-            current = candidate.location();
+            current = next;
             previousType = candidate.type();
         }
-        if (locations.size() < steps) {
-            List<Location> padded = padWithFallback(locations, steps);
-            if (!padded.isEmpty()) {
+        if (locations.size() != steps) {
+            List<Location> padded = padWithFallback(locations, steps, maxStepY);
+            if (padded.size() == steps) {
                 return padded;
             }
+            List<Location> extended = fillStraightPath(locations, steps, maxStepY);
+            if (extended.size() == steps) {
+                return extended;
+            }
+            return List.of();
         }
         return locations;
     }
@@ -502,9 +584,11 @@ public final class JumpAndRunListener implements Listener {
     private List<Location> buildEmergencyPath(Player player, int steps) {
         Location base = alignToBlockCenter(player.getLocation());
         base.setPitch(0);
+        base.setY(Math.floor(base.getY()) + 1.0D);
+        double maxStepY = resolveMaxStepY(base);
         List<Location> seed = new ArrayList<>(List.of(base));
-        List<Location> padded = padWithFallback(seed, steps);
-        if (!padded.isEmpty()) {
+        List<Location> padded = padWithFallback(seed, steps, maxStepY);
+        if (padded.size() == steps) {
             return padded;
         }
         List<Location> fallback = new ArrayList<>(steps);
@@ -518,22 +602,27 @@ public final class JumpAndRunListener implements Listener {
         for (int i = 1; i < steps; i++) {
             Vector heading = forward.clone();
             if (i % 3 == 0) {
-                heading.add(left.clone().multiply(0.6));
+                heading.add(left.clone().multiply(0.75));
             } else if (i % 3 == 1) {
-                heading.subtract(left.clone().multiply(0.4));
+                heading.subtract(left.clone().multiply(0.55));
             }
             heading = normalisedHorizontal(heading);
 
-            double distance = 1.85;
-            double height = 0.55 + (i % 2 == 0 ? 0.1 : -0.05);
+            double distance = 2.35;
+            double height = 0.6 + (i % 2 == 0 ? 0.15 : -0.1);
             Location candidate = alignToBlockCenter(current.clone().add(heading.clone().multiply(distance)).add(0, height, 0));
+            candidate = ensureMinimumVariation(current, candidate, maxStepY);
 
             int attempts = 0;
-            while (!isPathClear(current, candidate) && attempts++ < 6) {
+            while (!isPathClear(current, candidate, maxStepY) && attempts++ < 6) {
                 candidate.add(0, 0.3, 0);
             }
-            if (!isPathClear(current, candidate)) {
+            if (!isPathClear(current, candidate, maxStepY)) {
                 candidate = alignToBlockCenter(current.clone().add(0, 0.6, 0));
+            }
+
+            if (!isAcceptableStep(current, candidate, maxStepY)) {
+                break;
             }
 
             fallback.add(candidate);
@@ -541,29 +630,33 @@ public final class JumpAndRunListener implements Listener {
             forward = heading;
             left = new Vector(-forward.getZ(), 0, forward.getX()).normalize();
         }
-        return fallback;
+        if (fallback.size() < steps) {
+            fallback = fillStraightPath(fallback, steps, maxStepY);
+        }
+        return fallback.size() == steps ? fallback : List.of();
     }
 
     private StepCandidate findNextStep(Location current,
                                        Vector forward,
                                        Vector left,
                                        DifficultySegment segment,
-                                       StepDirectionType previousType) {
-        double baseDistance = Math.max(1.8, Math.min(3.1, segment.distance()));
-        double distanceScale = ThreadLocalRandom.current().nextDouble(0.95, 1.1);
-        double adjustedDistance = Math.max(1.7, Math.min(3.2, baseDistance * distanceScale));
+                                       StepDirectionType previousType,
+                                       double maxStepY) {
+        double baseDistance = Math.max(2.35, Math.min(3.2, segment.distance()));
+        double distanceScale = ThreadLocalRandom.current().nextDouble(0.94, 1.08);
+        double adjustedDistance = Math.max(2.2, Math.min(3.35, baseDistance * distanceScale));
         double adjustedHeight = Math.max(0.25,
-                Math.min(1.05, segment.height() + ThreadLocalRandom.current().nextDouble(-0.05, 0.25)));
+                Math.min(0.9, segment.height() + ThreadLocalRandom.current().nextDouble(-0.05, 0.2)));
 
         List<StepCandidate> candidates = new ArrayList<>();
         Vector straight = normalisedHorizontal(forward);
         Vector rightDiagonal = normalisedHorizontal(forward.clone().add(left));
         Vector leftDiagonal = normalisedHorizontal(forward.clone().subtract(left));
-        candidates.add(new StepCandidate(candidateLocation(current, straight, adjustedDistance, adjustedHeight),
+        candidates.add(new StepCandidate(candidateLocation(current, straight, adjustedDistance, adjustedHeight, maxStepY),
                 straight, StepDirectionType.STRAIGHT));
-        candidates.add(new StepCandidate(candidateLocation(current, rightDiagonal, adjustedDistance, adjustedHeight),
+        candidates.add(new StepCandidate(candidateLocation(current, rightDiagonal, adjustedDistance, adjustedHeight, maxStepY),
                 rightDiagonal, StepDirectionType.DIAGONAL));
-        candidates.add(new StepCandidate(candidateLocation(current, leftDiagonal, adjustedDistance, adjustedHeight),
+        candidates.add(new StepCandidate(candidateLocation(current, leftDiagonal, adjustedDistance, adjustedHeight, maxStepY),
                 leftDiagonal, StepDirectionType.DIAGONAL));
 
         Collections.shuffle(candidates, ThreadLocalRandom.current());
@@ -580,19 +673,23 @@ public final class JumpAndRunListener implements Listener {
         }
 
         for (StepCandidate candidate : prioritised) {
-            if (candidate.location() != null && isPathClear(current, candidate.location())) {
-                if (Math.abs(candidate.location().getY() - current.getY()) <= 1.25D) {
-                    return new StepCandidate(candidate.location(), candidate.heading(), candidate.type());
+            Location candidateLocation = ensureMinimumVariation(current, candidate.location(), maxStepY);
+            if (candidateLocation != null && isPathClear(current, candidateLocation, maxStepY)) {
+                if (Math.abs(candidateLocation.getY() - current.getY()) <= 1.25D
+                        && isAcceptableStep(current, candidateLocation, maxStepY)) {
+                    return new StepCandidate(candidateLocation, candidate.heading(), candidate.type());
                 }
             }
         }
 
-        double fallbackDistance = Math.max(1.6, Math.min(3.0, baseDistance * 0.9));
-        double fallbackHeight = Math.min(1.15, adjustedHeight + ThreadLocalRandom.current().nextDouble(0.2, 0.45));
+        double fallbackDistance = Math.max(2.1, Math.min(3.0, baseDistance * 0.98));
+        double fallbackHeight = Math.min(1.0, adjustedHeight + ThreadLocalRandom.current().nextDouble(0.1, 0.3));
         for (StepCandidate candidate : prioritised) {
-            Location location = candidateLocation(current, candidate.heading(), fallbackDistance, fallbackHeight);
-            if (location != null && isPathClear(current, location)) {
-                if (Math.abs(location.getY() - current.getY()) <= 1.25D) {
+            Location location = ensureMinimumVariation(current,
+                    candidateLocation(current, candidate.heading(), fallbackDistance, fallbackHeight, maxStepY), maxStepY);
+            if (location != null && isPathClear(current, location, maxStepY)) {
+                if (Math.abs(location.getY() - current.getY()) <= 1.25D
+                        && isAcceptableStep(current, location, maxStepY)) {
                     return new StepCandidate(location, candidate.heading(), candidate.type());
                 }
             }
@@ -602,29 +699,32 @@ public final class JumpAndRunListener implements Listener {
 
     private StepCandidate fallbackCandidate(Location current,
                                             Vector forward,
-                                            Vector left) {
+                                            Vector left,
+                                            double maxStepY) {
         Vector straight = normalisedHorizontal(forward);
         Vector rightDiagonal = normalisedHorizontal(forward.clone().add(left));
         Vector leftDiagonal = normalisedHorizontal(forward.clone().subtract(left));
         Vector[] directions = {straight, rightDiagonal, leftDiagonal};
         StepDirectionType[] types = {StepDirectionType.STRAIGHT, StepDirectionType.DIAGONAL, StepDirectionType.DIAGONAL};
-        double distance = 1.9;
-        double height = 0.55;
+        double distance = 2.35;
+        double height = 0.6;
         for (int i = 0; i < directions.length; i++) {
             Vector dir = directions[i];
             Location target = alignToBlockCenter(current.clone().add(dir.clone().multiply(distance)).add(0, height, 0));
+            target = ensureMinimumVariation(current, target, maxStepY);
             int attempts = 0;
-            while (!isPathClear(current, target) && attempts++ < 8) {
+            while (!isPathClear(current, target, maxStepY) && attempts++ < 8) {
                 target.add(0, 0.5, 0);
             }
-            if (isPathClear(current, target) && Math.abs(target.getY() - current.getY()) <= 1.25D) {
+            if (isPathClear(current, target, maxStepY) && Math.abs(target.getY() - current.getY()) <= 1.25D
+                    && isAcceptableStep(current, target, maxStepY)) {
                 return new StepCandidate(target, dir, types[i]);
             }
         }
         return null;
     }
 
-    private List<Location> padWithFallback(List<Location> seed, int desired) {
+    private List<Location> padWithFallback(List<Location> seed, int desired, double maxStepY) {
         if (seed.isEmpty()) {
             return List.of();
         }
@@ -639,27 +739,75 @@ public final class JumpAndRunListener implements Listener {
             }
             heading = normalisedHorizontal(heading);
             Vector left = new Vector(-heading.getZ(), 0, heading.getX()).normalize();
-            StepCandidate fallback = fallbackCandidate(current, heading, left);
+            StepCandidate fallback = fallbackCandidate(current, heading, left, maxStepY);
             if (fallback == null) {
                 break;
             }
-            path.add(fallback.location());
+            Location next = ensureMinimumVariation(current, fallback.location(), maxStepY);
+            if (!isAcceptableStep(current, next, maxStepY)) {
+                break;
+            }
+            path.add(next);
         }
-        return path.size() >= desired ? path : List.of();
+        return path.size() >= desired ? new ArrayList<>(path.subList(0, desired)) : List.of();
     }
 
-    private Location candidateLocation(Location origin, Vector direction, double distance, double height) {
+    private List<Location> fillStraightPath(List<Location> seed, int desired, double maxStepY) {
+        if (seed.isEmpty()) {
+            return List.of();
+        }
+        List<Location> path = new ArrayList<>(seed);
+        Location current = seed.get(seed.size() - 1).clone();
+        Vector heading;
+        if (path.size() >= 2) {
+            heading = normalisedHorizontal(current.toVector().clone()
+                    .subtract(path.get(path.size() - 2).toVector()));
+        } else {
+            heading = new Vector(1, 0, 0);
+        }
+        if (heading.lengthSquared() < 1.0E-4) {
+            heading = new Vector(1, 0, 0);
+        }
+        while (path.size() < desired) {
+            Vector offset = heading.clone().multiply(2.4);
+            Location next = current.clone().add(offset).add(0, 0.65, 0);
+            next = ensureMinimumVariation(current, next, maxStepY);
+            next = alignToBlockCenter(next);
+            int attempts = 0;
+            while (!isPathClear(current, next, maxStepY) && attempts++ < 6) {
+                next.add(0, 0.3, 0);
+            }
+            if (!isAcceptableStep(current, next, maxStepY)) {
+                break;
+            }
+            path.add(next);
+            current = next.clone();
+            if (path.size() >= 2) {
+                heading = normalisedHorizontal(path.get(path.size() - 1).toVector()
+                        .subtract(path.get(path.size() - 2).toVector()));
+                if (heading.lengthSquared() < 1.0E-4) {
+                    heading = new Vector(1, 0, 0);
+                }
+            }
+        }
+        return path.size() == desired ? path : List.of();
+    }
+
+    private Location candidateLocation(Location origin, Vector direction, double distance, double height, double maxStepY) {
         Location next = origin.clone()
                 .add(direction.clone().multiply(distance))
                 .add(0, height, 0);
         if (ThreadLocalRandom.current().nextBoolean()) {
-            double tilt = ThreadLocalRandom.current().nextDouble(-0.35, 0.35);
+            double tilt = ThreadLocalRandom.current().nextDouble(-0.25, 0.25);
             next.add(direction.clone().crossProduct(new Vector(0, 1, 0)).normalize().multiply(tilt));
+        }
+        if (next.getY() > maxStepY) {
+            next.setY(maxStepY);
         }
         return alignToBlockCenter(next);
     }
 
-    private boolean isPathClear(Location from, Location to) {
+    private boolean isPathClear(Location from, Location to, double maxStepY) {
         if (from.getWorld() == null || to.getWorld() == null || !from.getWorld().equals(to.getWorld())) {
             return false;
         }
@@ -669,11 +817,83 @@ public final class JumpAndRunListener implements Listener {
             double t = i / (double) samples;
             Vector point = from.toVector().clone().add(delta.clone().multiply(t));
             Location probe = new Location(from.getWorld(), point.getX(), point.getY(), point.getZ());
-            if (!isSpaceFree(probe)) {
+            if (probe.getY() > maxStepY + 1.0 || !isSpaceFree(probe)) {
                 return false;
             }
         }
         return true;
+    }
+
+    private Location ensureMinimumVariation(Location current, Location candidate, double maxStepY) {
+        if (candidate == null) {
+            return null;
+        }
+        Location adjusted = candidate.clone();
+        if (adjusted.getY() > maxStepY) {
+            adjusted.setY(maxStepY);
+        }
+        double verticalDelta = adjusted.getY() - current.getY();
+        double magnitude = Math.abs(verticalDelta);
+        boolean nearCap = isNearHeightCap(adjusted.getY(), maxStepY) || isNearHeightCap(current.getY(), maxStepY);
+        if (nearCap) {
+            if (adjusted.getY() > maxStepY) {
+                adjusted.setY(maxStepY);
+            }
+            if (current.getY() > maxStepY) {
+                adjusted.setY(maxStepY);
+            }
+            if (adjusted.getY() < maxStepY && current.getY() >= maxStepY) {
+                adjusted.setY(maxStepY);
+            }
+            return adjusted;
+        }
+        if (magnitude >= MIN_STEP_VERTICAL_DELTA) {
+            return adjusted;
+        }
+        double direction = verticalDelta >= 0 ? 1.0 : -1.0;
+        if (magnitude < 1.0E-3) {
+            direction = ThreadLocalRandom.current().nextBoolean() ? 1.0 : -1.0;
+        }
+        double adjustment = (MIN_STEP_VERTICAL_DELTA - magnitude) + 0.1;
+        double targetY = adjusted.getY() + direction * adjustment;
+        if (targetY > maxStepY) {
+            targetY = maxStepY;
+        }
+        adjusted.setY(targetY);
+        return adjusted;
+    }
+
+    private boolean isAcceptableStep(Location current, Location candidate, double maxStepY) {
+        if (candidate == null) {
+            return false;
+        }
+        if (current.getWorld() == null || candidate.getWorld() == null
+                || !current.getWorld().equals(candidate.getWorld())) {
+            return false;
+        }
+        if (candidate.getY() > maxStepY + 1.0E-3) {
+            return false;
+        }
+        double dx = candidate.getX() - current.getX();
+        double dz = candidate.getZ() - current.getZ();
+        double horizontalSq = dx * dx + dz * dz;
+        if (horizontalSq < MIN_STEP_HORIZONTAL_DISTANCE_SQ) {
+            return false;
+        }
+        int blockDx = Math.abs(candidate.getBlockX() - current.getBlockX());
+        int blockDz = Math.abs(candidate.getBlockZ() - current.getBlockZ());
+        if (Math.max(blockDx, blockDz) < MIN_STEP_BLOCK_SEPARATION) {
+            return false;
+        }
+        double verticalDelta = Math.abs(candidate.getY() - current.getY());
+        boolean nearCap = isNearHeightCap(candidate.getY(), maxStepY) || isNearHeightCap(current.getY(), maxStepY);
+        if (!nearCap && verticalDelta < MIN_STEP_VERTICAL_DELTA) {
+            return false;
+        }
+        if (nearCap && candidate.getY() > maxStepY + 1.0E-3) {
+            return false;
+        }
+        return nearCap || verticalDelta >= MIN_STEP_VERTICAL_DELTA;
     }
 
     private boolean isSpaceFree(Location location) {
@@ -691,8 +911,7 @@ public final class JumpAndRunListener implements Listener {
                 for (int z = centerZ - 1; z <= centerZ + 1; z++) {
                     Block block = world.getBlockAt(x, y, z);
                     if (y == centerY - 1) {
-                        Material type = block.getType();
-                        if (type != Material.AIR && type != Material.CAVE_AIR && type != Material.VOID_AIR) {
+                        if (!canSupportPlatform(block)) {
                             return false;
                         }
                         continue;
@@ -712,6 +931,13 @@ public final class JumpAndRunListener implements Listener {
         }
         Material type = block.getType();
         return !type.isSolid() && !block.isLiquid();
+    }
+
+    private boolean canSupportPlatform(Block block) {
+        if (block.isEmpty()) {
+            return true;
+        }
+        return !block.isLiquid();
     }
 
     private DifficultySegment findSegment(List<DifficultySegment> segments, int index, DifficultySegment fallback) {
@@ -775,45 +1001,41 @@ public final class JumpAndRunListener implements Listener {
     private List<DifficultySegment> defaultSegments(int steps) {
         List<DifficultySegment> defaults = new ArrayList<>();
         int easyEnd = Math.min(steps, 12);
-        defaults.add(new DifficultySegment(1, easyEnd, 2.25, 0.55));
+        defaults.add(new DifficultySegment(1, easyEnd, 2.6, 0.6));
         if (easyEnd >= steps) {
             return defaults;
         }
         int mediumEnd = Math.min(steps, Math.max(easyEnd + 1, 24));
-        defaults.add(new DifficultySegment(easyEnd + 1, mediumEnd, 2.65, 0.75));
+        defaults.add(new DifficultySegment(easyEnd + 1, mediumEnd, 2.95, 0.8));
         if (mediumEnd >= steps) {
             return defaults;
         }
-        defaults.add(new DifficultySegment(mediumEnd + 1, steps, 2.95, 0.95));
+        defaults.add(new DifficultySegment(mediumEnd + 1, steps, 3.2, 0.95));
         return defaults;
     }
 
     private Set<Integer> loadCheckpoints(int steps) {
         Set<Integer> checkpoints = new HashSet<>();
-        checkpoints.add(0); // always include the start
-        int maxIndex = Math.max(1, steps - 1);
-        for (int step = 5; step <= maxIndex; step += 5) {
-            checkpoints.add(step);
-        }
-        List<Integer> configured = plugin.getConfig().getIntegerList("items.jumpAndRun.checkpoints");
-        for (Integer value : configured) {
-            if (value == null) {
-                continue;
-            }
-            int normalized = Math.max(1, Math.min(maxIndex, value));
-            checkpoints.add(normalized);
+        checkpoints.add(0); // start
+        int[] desired = {5, 10, 15, 20, 25, 30, 35};
+        for (int step : desired) {
+            int clamped = Math.max(1, Math.min(steps, step));
+            checkpoints.add(clamped - 1);
         }
         return checkpoints;
     }
 
-    private void placePlatform(Run run, Location stepLocation) {
+    private void placePlatform(Run run, int index) {
+        Location stepLocation = run.steps.get(Math.max(0, Math.min(index, run.steps.size() - 1)));
         Block block = stepLocation.clone().add(0, -1, 0).getBlock();
         run.originals.computeIfAbsent(block,
                 key -> new BlockSnapshot(key.getType(), key.getBlockData().clone()));
-        block.setType(run.platformMaterial, false);
+        Material target = run.checkpoints.contains(index) ? CHECKPOINT_MATERIAL : run.playerMaterial;
+        block.setType(target, false);
     }
 
-    private void restorePlatform(Run run, Location stepLocation) {
+    private void restorePlatform(Run run, int index) {
+        Location stepLocation = run.steps.get(Math.max(0, Math.min(index, run.steps.size() - 1)));
         Block block = stepLocation.clone().add(0, -1, 0).getBlock();
         BlockSnapshot snapshot = run.originals.remove(block);
         if (snapshot != null) {
@@ -821,16 +1043,29 @@ public final class JumpAndRunListener implements Listener {
         }
     }
 
+    private void cleanupPlatforms(Run run) {
+        if (run == null) {
+            return;
+        }
+        for (Map.Entry<Block, BlockSnapshot> entry : run.originals.entrySet()) {
+            entry.getValue().restore(entry.getKey());
+        }
+        run.originals.clear();
+    }
+
     private void restoreMovement(Player player, Run run) {
-        if (run.restoreDoubleJump) {
-            plugin.doubleJump().restoreAfterFlight(player);
+        var doubleJump = plugin.doubleJump();
+        if (run.restoreDoubleJump && doubleJump != null) {
+            doubleJump.restoreAfterFlight(player);
         }
         if (run.restoreFlight) {
             player.setAllowFlight(true);
             if (run.restoreFlying) {
                 player.setFlying(true);
             }
-            plugin.doubleJump().disableForFlight(player);
+            if (doubleJump != null) {
+                doubleJump.disableForFlight(player);
+            }
         }
     }
 

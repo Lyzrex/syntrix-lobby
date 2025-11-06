@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
@@ -85,6 +86,9 @@ public final class DoubleJumpService implements Listener {
         String perm = plugin.getConfig().getString("doublejump.permission", "syntrix.doublejump");
         return perm == null || perm.isBlank() || player.hasPermission(perm);
     }
+    public boolean isPrimed(@NotNull Player player) {
+        return canUse(player);
+    }
 
     private double cooldownSeconds() {
         return plugin.getConfig().getDouble("doublejump.cooldown-seconds", 1.0D);
@@ -131,6 +135,16 @@ public final class DoubleJumpService implements Listener {
         UUID id = event.getPlayer().getUniqueId();
         cooldownUntil.remove(id);
         temporarilyDisabled.remove(id);
+    }
+
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!temporarilyDisabled.contains(player.getUniqueId())) {
+                prime(player);
+            }
+        });
     }
 
     @EventHandler
