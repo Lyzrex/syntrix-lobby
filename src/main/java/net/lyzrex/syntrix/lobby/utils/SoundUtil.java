@@ -6,23 +6,26 @@ import org.bukkit.Sound;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Utility helpers for resolving {@link Sound} identifiers from configuration values.
- *
- * <p>The resolver intentionally avoids the deprecated {@code Sound#valueOf(String)} path and
- * instead attempts registry lookups first before consulting a cached alias table populated from
- * the active sound registry.</p>
- */
+
 public final class SoundUtil {
 
-    private static final Map<String, Sound> LEGACY_ENUM_LOOKUP = buildLegacyLookup();
+    private static final Method SOUND_KEY_METHOD = resolveKeyMethod("key");
+    private static final Method SOUND_GET_KEY_METHOD = resolveKeyMethod("getKey");
 
     private SoundUtil() {}
 
@@ -41,10 +44,14 @@ public final class SoundUtil {
             if (resolved != null) {
                 return resolved;
             }
+
+            Sound alias = AliasLookupHolder.lookup(candidate);
+            if (alias != null) {
+                return alias;
+            }
         }
 
-        Sound legacy = tryLegacyEnumLookup(in);
-        return legacy != null ? legacy : fallback;
+        return valueOfFallback(in, fallback);
     }
 
     private static @Nullable Sound byRegistryKey(String keyStr) {
@@ -110,19 +117,23 @@ public final class SoundUtil {
         return set;
     }
 
-    private static Map<String, Sound> buildLegacyLookup() {
+    private static final class AliasLookupHolder {
+        private static final Map<String, Sound> ALIASES = buildAliasLookup();
+
+        private AliasLookupHolder() {}
+
+        private static @Nullable Sound lookup(String candidate) {
+            String normalized = normalize(candidate);
+            return normalized != null ? ALIASES.get(normalized) : null;
+        }
+    }
+
+    private static Map<String, Sound> buildAliasLookup() {
         Map<String, Sound> map = new HashMap<>();
 
-        for (Sound sound : Sound.values()) {
-            NamespacedKey key = null;
-            try {
-                key = Registry.SOUNDS.getKey(sound);
-            } catch (Throwable ignored) {
-                // The registry may be unavailable during bootstrap; fall back to enum data only.
-            }
+        for (Sound sound : availableSounds()) {
+            NamespacedKey key = resolveNamespacedKey(sound);
 
-            // Always register the enum constant name variants as a last resort.
-            registerAliasFamily(map, sound, sound.name());
 
             if (key == null) {
                 continue;
@@ -133,18 +144,6 @@ public final class SoundUtil {
 
             registerAliasFamily(map, sound, value);
             registerAliasFamily(map, sound, namespace + ":" + value);
-
-            String underscored = value.replace('.', '_');
-            registerAliasFamily(map, sound, underscored);
-            registerAliasFamily(map, sound, namespace + ":" + underscored);
-
-            String dotted = value.replace('_', '.');
-            registerAliasFamily(map, sound, dotted);
-            registerAliasFamily(map, sound, namespace + ":" + dotted);
-
-            String hyphenated = underscored.replace('_', '-');
-            registerAliasFamily(map, sound, hyphenated);
-            registerAliasFamily(map, sound, namespace + ":" + hyphenated);
         }
 
         return map;
@@ -154,55 +153,196 @@ public final class SoundUtil {
         if (alias == null) {
             return;
         }
+        registerAliasFamily(map, sound, Collections.singleton(alias));
+    }
 
-        Set<String> pending = new LinkedHashSet<>();
-        pending.add(alias);
+    private static void registerAliasFamily(Map<String, Sound> map, Sound sound, Collection<String> aliases) {
+        if (aliases == null || aliases.isEmpty()) {
+            return;
+        }
+
+        Deque<String> pending = new ArrayDeque<>(aliases);
+        Set<String> seen = new LinkedHashSet<>();
 
         while (!pending.isEmpty()) {
-            Iterator<String> it = pending.iterator();
-            String candidate = it.next();
-            it.remove();
-            if (candidate == null) {
+            String candidate = pending.removeFirst();
+            if (!seen.add(candidate)) {
                 continue;
             }
 
-            String trimmed = candidate.trim();
-            if (trimmed.isEmpty()) {
+            String normalized = normalize(candidate);
+            if (normalized == null) {
                 continue;
             }
 
-            boolean added = map.putIfAbsent(trimmed, sound) == null;
-            if (!added) {
-                continue;
-            }
+            registerAlias(map, sound, normalized);
 
-            String lower = trimmed.toLowerCase(Locale.ROOT);
-            String upper = trimmed.toUpperCase(Locale.ROOT);
-
-            if (!trimmed.equals(lower)) pending.add(lower);
-            if (!trimmed.equals(upper)) pending.add(upper);
-
-            if (trimmed.indexOf('.') >= 0) {
-                pending.add(trimmed.replace('.', '_'));
-                pending.add(trimmed.replace('.', '-'));
-            }
-            if (trimmed.indexOf('_') >= 0) {
-                pending.add(trimmed.replace('_', '.'));
-                pending.add(trimmed.replace('_', '-'));
-            }
-            if (trimmed.indexOf('-') >= 0) {
-                pending.add(trimmed.replace('-', '_'));
-                pending.add(trimmed.replace('-', '.'));
+            String withoutMinecraft = stripMinecraftPrefix(normalized);
+            if (withoutMinecraft != null) {
+                pending.addLast(withoutMinecraft);
             }
         }
     }
 
-    private static @Nullable Sound tryLegacyEnumLookup(String input) {
-        for (String candidate : buildCandidates(input)) {
-            Sound match = LEGACY_ENUM_LOOKUP.get(candidate);
-            if (match != null) {
-                return match;
+    private static void registerAlias(Map<String, Sound> map, Sound sound, String normalizedAlias) {
+        if (map.putIfAbsent(normalizedAlias, sound) != null) {
+            return;
+        }
+
+        String namespace = "minecraft";
+        String value = normalizedAlias;
+        int colonIndex = normalizedAlias.indexOf(':');
+        if (colonIndex >= 0) {
+            namespace = normalizedAlias.substring(0, colonIndex);
+            value = normalizedAlias.substring(colonIndex + 1);
+        }
+
+        for (String variant : expandSeparators(value)) {
+            addAlias(map, sound, variant);
+            addAlias(map, sound, namespace + ":" + variant);
+        }
+
+        if (!"minecraft".equals(namespace)) {
+            for (String variant : expandSeparators(value)) {
+                addAlias(map, sound, "minecraft:" + variant);
             }
+        }
+    }
+
+    private static void addAlias(Map<String, Sound> map, Sound sound, String alias) {
+        String normalized = normalize(alias);
+        if (normalized == null) {
+            return;
+        }
+        map.putIfAbsent(normalized, sound);
+    }
+
+    private static Collection<String> expandSeparators(String value) {
+        Deque<String> pending = new ArrayDeque<>();
+        Set<String> results = new LinkedHashSet<>();
+        pending.add(value);
+
+        while (!pending.isEmpty()) {
+            String current = pending.removeFirst();
+            if (!results.add(current)) {
+                continue;
+            }
+
+            if (current.contains(".")) {
+                pending.add(current.replace('.', '_'));
+                pending.add(current.replace('.', '-'));
+            }
+            if (current.contains("_")) {
+                pending.add(current.replace('_', '.'));
+                pending.add(current.replace('_', '-'));
+            }
+            if (current.contains("-")) {
+                pending.add(current.replace('-', '_'));
+                pending.add(current.replace('-', '.'));
+            }
+        }
+
+        return results;
+    }
+
+    private static Iterable<Sound> availableSounds() {
+        Iterable<Sound> registrySounds = soundsFromRegistry();
+        if (registrySounds != null) {
+            return registrySounds;
+        }
+
+        Sound[] enumConstants = Sound.class.getEnumConstants();
+        if (enumConstants != null) {
+            return Arrays.asList(enumConstants);
+        }
+
+        return Collections.emptyList();
+    }
+
+    private static @Nullable Iterable<Sound> soundsFromRegistry() {
+        try {
+            Iterator<Sound> iterator = Registry.SOUNDS.iterator();
+            if (iterator == null) {
+                return null;
+            }
+
+            List<Sound> sounds = new ArrayList<>();
+            iterator.forEachRemaining(sounds::add);
+            return sounds;
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static @Nullable NamespacedKey resolveNamespacedKey(Sound sound) {
+        NamespacedKey key = invokeKeyMethod(SOUND_KEY_METHOD, sound);
+        if (key != null) {
+            return key;
+        }
+
+        key = invokeKeyMethod(SOUND_GET_KEY_METHOD, sound);
+        if (key != null) {
+            return key;
+        }
+
+        try {
+            NamespacedKey registryKey = Registry.SOUNDS.getKey(sound);
+            if (registryKey != null) {
+                return registryKey;
+            }
+        } catch (Throwable ignored) {
+            // Registry lookup unavailable on older servers.
+        }
+
+        return null;
+    }
+
+    private static @Nullable NamespacedKey invokeKeyMethod(@Nullable Method method, Sound sound) {
+        if (method == null || sound == null) {
+            return null;
+        }
+
+        try {
+            Object result = method.invoke(sound);
+            if (result instanceof NamespacedKey namespacedKey) {
+                return namespacedKey;
+            }
+        } catch (Throwable ignored) {
+            // Method unavailable or failed; continue to fallback.
+        }
+
+        return null;
+    }
+
+    private static @Nullable Method resolveKeyMethod(String name) {
+        try {
+            return Sound.class.getMethod(name);
+        } catch (Throwable ignored) {
+            return null;
+        }
+    }
+
+    private static Sound valueOfFallback(String input, Sound fallback) {
+        Sound legacy = AliasLookupHolder.lookup(input);
+        return legacy != null ? legacy : fallback;
+    }
+
+    private static @Nullable String normalize(@Nullable String alias) {
+        if (alias == null) {
+            return null;
+        }
+
+        String trimmed = alias.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private static @Nullable String stripMinecraftPrefix(String alias) {
+        if (alias.startsWith("minecraft:") && alias.length() > "minecraft:".length()) {
+            return alias.substring("minecraft:".length());
         }
         return null;
     }
