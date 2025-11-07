@@ -1,1 +1,1 @@
-rootProject.name = "Syntrix-Lobby"
+rootProject.name = "SyntrixLobby"
