@@ -6,7 +6,7 @@ softdepend:
   - LythCore
 author: Lyzrex
 website: https://github.com/lyzrex
-description: Syntrix Lobby plugin
+description: LobbySystem for Lythrion
 
 commands:
   spawn:
@@ -33,11 +33,11 @@ commands:
     description: Sets the death height for the height guard.
     usage: "/setheight [y]"
     permission: syntrix.setheight
-    aliases: [ sethight ]
   vanish:
     description: Toggles vanish (invisible/visible).
     usage: "/vanish"
     permission: syntrix.vanish
+    aliases: [v]
   time:
     description: Controls lobby time (freeze/lock).
     usage: "/time set <ticks> | /time auto on|off | /time lock <ticks>"

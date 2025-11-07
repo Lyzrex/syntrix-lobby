@@ -30,13 +30,22 @@ public final class BuildCommand extends BaseCommand {
                              @NotNull String label,
                              @NotNull String[] args) {
 
-        if (!plugin.getConfig().getBoolean("commands.build.enabled", true)) return true;
+        if (!plugin.getConfig().getBoolean("commands.build.enabled", true)) {
+            ms.send(sender, plugin.messages().getString(
+                    "commands.build.disabled-command",
+                    "<red>The build command is currently disabled.</red>"
+            ));
+            return true;
+        }
 
 
         String perm = plugin.getConfig().getString("commands.build.permission", "syntrix.build");
 
         if (!(sender instanceof Player p)) {
-            ms.send(sender, "<red>Only players can use this command.</red>");
+            ms.send(sender, plugin.messages().getString(
+                    "commands.build.player-only",
+                    "<red>This command can only be used by players.</red>"
+            ));
             return true;
         }
         if (!p.hasPermission(perm)) {

@@ -2,7 +2,6 @@ package net.lyzrex.syntrix.lobby.listeners;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
-import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
 import net.lyzrex.syntrix.lobby.utils.FlightUtil;
 import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import org.bukkit.Bukkit;
@@ -43,9 +42,7 @@ public final class PlayerJoinListener implements Listener {
         if (plugin.vanish() != null && cfg.getBoolean("vanish.enabled", true)) {
             plugin.vanish().applyVisibilityForViewer(p);
         }
-        if (plugin.playerHider() != null && cfg.getBoolean("playerHider.enabled", true)) {
-            plugin.playerHider().applyForViewer(p);
-        }
+        // Player hider functionality has been retired.
 
 
         boolean global = cfg.getBoolean("join.teleport-to-spawn.enabled", true);
@@ -125,10 +122,23 @@ public final class PlayerJoinListener implements Listener {
         }
 
 
-        if (plugin.getConfig().getBoolean("playerHider.enabled", true) && plugin.playerHider() != null) {
+        if (plugin.getConfig().getBoolean("playerHider.enabled", true)) {
             int slot = clamp(plugin.getConfig().getInt("playerHider.item.slot", 7));
-            var listener = new PlayerHiderListener(plugin, plugin.playerHider());
-            inv.setItem(slot, listener.buildHotbarItem());
+            String matName = plugin.getConfig().getString("playerHider.item.material", "NETHER_STAR");
+            Material mat = Material.matchMaterial(matName);
+            if (mat == null) {
+                plugin.getLogger().warning("[PlayerHider] Unknown material '" + matName + "', using NETHER_STAR.");
+                mat = Material.NETHER_STAR;
+            }
+
+            ItemStack placeholder = new ItemStack(mat);
+            ItemMeta meta = placeholder.getItemMeta();
+            meta.displayName(mm.deserialize("<gradient:#2AF598:#009EFD>Coming Soon</gradient>"));
+            meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
+            meta.getPersistentDataContainer().set(SyntrixLobby.ITEM_LOCK, PersistentDataType.BYTE, (byte) 1);
+            placeholder.setItemMeta(meta);
+
+            inv.setItem(slot, placeholder);
         }
 
 

@@ -5,8 +5,8 @@ import net.lyzrex.syntrix.lobby.commands.*;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
 
-public final class CommandManager {
-    private CommandManager() {
+public final class CommandRegistry {
+    private CommandRegistry() {
     }
 
     public static void registerAll(SyntrixLobby plugin) {

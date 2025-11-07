@@ -1,6 +1,5 @@
 package net.lyzrex.syntrix.lobby.commands;
 
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
 import net.lyzrex.syntrix.lobby.core.MessageService;
 import org.bukkit.World;
@@ -18,7 +17,6 @@ public final class SetHeightCommand implements TabExecutor {
 
     private final SyntrixLobby plugin;
     private final MessageService ms;
-    private final MiniMessage mm = MiniMessage.miniMessage();
 
     public SetHeightCommand(SyntrixLobby plugin) {
         this.plugin = plugin;
@@ -40,24 +38,30 @@ public final class SetHeightCommand implements TabExecutor {
                              @NotNull String[] args) {
 
         if (!plugin.getConfig().getBoolean("commands.setheight.enabled", true)) {
+            ms.sendFromConfig(sender,
+                    "commands.setheight.disabled-command",
+                    "<red>The setheight command is currently disabled.</red>");
             return true;
         }
 
         if (!(sender instanceof Player p)) {
-            sender.sendMessage(mm.deserialize(ms.prefix() + "<red>Only players can use this command.</red>"));
+            ms.send(sender, "<red>Only players can use this command.</red>");
             return true;
         }
 
         String perm = plugin.getConfig().getString("commands.setheight.permission", "syntrix.setheight");
         if (perm != null && !perm.isBlank() && !p.hasPermission(perm)) {
-            p.sendMessage(mm.deserialize(ms.prefix() + "<red>You do not have permission.</red>"));
+            ms.send(p, plugin.messages().getString("general.no-permission",
+                    "<red>You do not have permission.</red>"));
             return true;
         }
 
         String worldName = plugin.getConfig().getString("lobby.world", "world");
         World w = plugin.getServer().getWorld(worldName);
         if (w == null) {
-            p.sendMessage(mm.deserialize(ms.prefix() + "<red>Lobby world not found:</red> <white>" + worldName + "</white>"));
+            String notFound = plugin.messages().getString("commands.setheight.world-missing",
+                    "<red>Lobby world not found:</red> <white>{world}</white>");
+            ms.send(p, notFound.replace("{world}", worldName));
             return true;
         }
 
@@ -66,7 +70,7 @@ public final class SetHeightCommand implements TabExecutor {
             try {
                 height = Double.parseDouble(args[0]);
             } catch (NumberFormatException ex) {
-                p.sendMessage(mm.deserialize(ms.prefix() + "<gray>Usage:</gray> <white>/" + label + " [height]</white>"));
+                ms.send(p, usage(label));
                 return true;
             }
         } else {
@@ -79,8 +83,15 @@ public final class SetHeightCommand implements TabExecutor {
         String msg = plugin.messages().getString("commands.setheight.updated",
                         "<green>Death height set to</green> <white>{height}</white>.")
                 .replace("{height}", String.valueOf(height));
-        p.sendMessage(mm.deserialize(ms.prefix() + msg));
+        ms.send(p, msg);
         return true;
+    }
+
+    private String usage(String label) {
+        return plugin.messages().getString(
+                        "commands.setheight.usage",
+                        "<gray>Usage:</gray> <white>/%label% [height]</white>")
+                .replace("%label%", label);
     }
 
     @Override

@@ -5,8 +5,8 @@ import net.lyzrex.syntrix.lobby.listeners.*;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.PluginManager;
 
-public final class ListenerManager {
-    private ListenerManager() {
+public final class ListenerRegistry {
+    private ListenerRegistry() {
     }
 
     public static void registerAll(SyntrixLobby plugin) {
@@ -17,8 +17,6 @@ public final class ListenerManager {
         pm.registerEvents(new LobbyProtectionListener(plugin), plugin);
         pm.registerEvents(new InventoryGuardListener(plugin), plugin);
         pm.registerEvents(new NavigatorListener(plugin), plugin);
-        pm.registerEvents(plugin.playerHider(), plugin);
-        pm.registerEvents(new PlayerHiderListener(plugin, plugin.playerHider()), plugin);
         pm.registerEvents(new LobbyItemEnforcerListener(plugin), plugin);
         pm.registerEvents(new JumpAndRunListener(plugin, plugin.jumpAndRun()), plugin);
         pm.registerEvents(new JumpPadListener(plugin), plugin);
