@@ -21,13 +21,11 @@ public final class MessageUtil {
 
     public static void send(CommandSender sender, SyntrixLobby plugin, String path, String def) {
         String msg = plugin.messages().getString(path, def);
-        if (msg == null || msg.isBlank()) return;
-        sender.sendMessage(mm.deserialize(prefix(plugin) + msg));
+        sendMiniMessage(sender, prefix(plugin), msg);
     }
 
     public static void sendRaw(CommandSender sender, SyntrixLobby plugin, String messageMiniMessage) {
-        if (messageMiniMessage == null || messageMiniMessage.isBlank()) return;
-        sender.sendMessage(mm.deserialize(prefix(plugin) + messageMiniMessage));
+        sendMiniMessage(sender, prefix(plugin), messageMiniMessage);
     }
 
     public static void sendActionBar(Player player, @Nullable String miniMessage) {
@@ -43,6 +41,29 @@ public final class MessageUtil {
                 "<red>Double jump is on cooldown for {time}s.</red>"
         );
         String msg = tmpl.replace("{time}", String.format(Locale.US, "%.1f", Math.max(0.0, secondsLeft)));
-        p.sendMessage(mm.deserialize(prefix(plugin) + msg));
+        p.sendActionBar(mm.deserialize(prefix(plugin) + msg));
+    }
+
+    private static void sendMiniMessage(CommandSender sender, String prefix, String messageBody) {
+        if ((messageBody == null || messageBody.isBlank()) && prefix.isBlank()) {
+            return;
+        }
+
+        String payload;
+        if (messageBody == null || messageBody.isBlank()) {
+            payload = prefix;
+        } else {
+            payload = prefix + messageBody;
+        }
+
+        if (payload.isBlank()) {
+            return;
+        }
+
+        if (sender instanceof Player player) {
+            player.sendActionBar(mm.deserialize(payload));
+        } else {
+            sender.sendMessage(mm.deserialize(payload));
+        }
     }
 }

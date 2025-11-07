@@ -33,26 +33,26 @@ public final class VanishService {
         refreshAll();
     }
 
-        private void load() {
-            if (dataFile == null) {
-                dataFile = new File(plugin.getDataFolder(), DATA_FILE);
-            }
-            if (!dataFile.exists()) {
-                vanished.clear();
-                dataConfig = new YamlConfiguration();
-                return;
+    private void load() {
+        if (dataFile == null) {
+            dataFile = new File(plugin.getDataFolder(), DATA_FILE);
         }
-            dataConfig = YamlConfiguration.loadConfiguration(dataFile);
-            List<String> entries = dataConfig.getStringList("vanished");
+        if (!dataFile.exists()) {
             vanished.clear();
-            for (String raw : entries) {
-                try {
-                    vanished.add(UUID.fromString(raw));
-                } catch (IllegalArgumentException ignored) {
-                    plugin.getLogger().warning("[Vanish] Ignoring invalid UUID in vanish-data.yml: " + raw);
-                }
+            dataConfig = new YamlConfiguration();
+            return;
+        }
+        dataConfig = YamlConfiguration.loadConfiguration(dataFile);
+        List<String> entries = dataConfig.getStringList("vanished");
+        vanished.clear();
+        for (String raw : entries) {
+            try {
+                vanished.add(UUID.fromString(raw));
+            } catch (IllegalArgumentException ignored) {
+                plugin.getLogger().warning("[Vanish] Ignoring invalid UUID in vanish-data.yml: " + raw);
             }
         }
+    }
     private void save() {
         if (dataConfig == null) {
             dataConfig = new YamlConfiguration();

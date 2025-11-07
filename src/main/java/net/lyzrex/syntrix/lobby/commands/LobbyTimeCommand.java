@@ -22,7 +22,13 @@ public final class LobbyTimeCommand extends BaseCommand {
                              @NotNull String label,
                              @NotNull String[] args) {
 
-        if (!plugin.getConfig().getBoolean("commands.time.enabled", true)) return true;
+        if (!plugin.getConfig().getBoolean("commands.time.enabled", true)) {
+            ms.send(sender, plugin.messages().getString(
+                    "commands.time.disabled-command",
+                    "<red>The time command is currently disabled.</red>"
+            ));
+            return true;
+        }
 
         final String perm = plugin.getConfig().getString("commands.time.permission", "syntrix.time");
         if (!sender.hasPermission(perm)) {
@@ -44,7 +50,10 @@ public final class LobbyTimeCommand extends BaseCommand {
                 ms.send(sender, plugin.messages().getString("time.set.ok",
                         "<green>Time set to <white>%ticks%</white>.</green>").replace("%ticks%", String.valueOf(ticks)));
             } else {
-                ms.send(sender, "<red>World not found.</red>");
+                ms.send(sender, plugin.messages().getString(
+                        "commands.time.world-missing",
+                        "<red>World not found.</red>"
+                ));
             }
             return true;
         }

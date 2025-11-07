@@ -1,11 +1,10 @@
 package net.lyzrex.syntrix.lobby;
 
 import net.lyzrex.syntrix.lobby.core.JumpAndRunService;
-import net.lyzrex.syntrix.lobby.core.PlayerHiderService;
 import net.lyzrex.syntrix.lobby.core.VanishService;
-import net.lyzrex.syntrix.lobby.manager.CommandManager;
-import net.lyzrex.syntrix.lobby.manager.ListenerManager;
+import net.lyzrex.syntrix.lobby.manager.CommandRegistry;
 import net.lyzrex.syntrix.lobby.core.DoubleJumpService;
+import net.lyzrex.syntrix.lobby.manager.ListenerRegistry;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -45,17 +44,12 @@ public final class SyntrixLobby extends JavaPlugin {
 
 
     private VanishService vanish;
-    private PlayerHiderService playerHider;
     private JumpAndRunService jumpAndRun;
 
     private DoubleJumpService doubleJump;
 
     public VanishService vanish() {
         return vanish;
-    }
-
-    public PlayerHiderService playerHider() {
-        return playerHider;
     }
 
     public JumpAndRunService jumpAndRun() {
@@ -87,16 +81,13 @@ public final class SyntrixLobby extends JavaPlugin {
         this.vanish = new VanishService(this);
         this.vanish.init();
 
-        this.playerHider = new PlayerHiderService(this);
-
-
         this.jumpAndRun = new JumpAndRunService(this);
         this.jumpAndRun.init();
 
         this.doubleJump = new DoubleJumpService(this);
 
-        ListenerManager.registerAll(this);
-        CommandManager.registerAll(this);
+        ListenerRegistry.registerAll(this);
+        CommandRegistry.registerAll(this);
 
 
         startTimeControl();
@@ -158,7 +149,6 @@ public final class SyntrixLobby extends JavaPlugin {
 
 
         if (this.vanish != null) this.vanish.refreshAll();
-        if (this.playerHider != null) this.playerHider.refreshAll();
         if (this.jumpAndRun == null) this.jumpAndRun = new JumpAndRunService(this);
         this.jumpAndRun.reload();
         if (this.doubleJump == null) this.doubleJump = new DoubleJumpService(this);

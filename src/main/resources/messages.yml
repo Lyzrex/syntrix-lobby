@@ -40,7 +40,6 @@ jumpandrun:
     line: '<#8799ae>{pos}. <#FFFFFF>{player}</#FFFFFF> <#8799ae>- {time}'
     empty: '<#8799ae>No runs recorded yet.</#8799ae>'
 
-
 # ----------------------------------------------------------
 # Fly Command
 # ----------------------------------------------------------
@@ -171,14 +170,13 @@ commands:
     done: '<#2AF598>Gave <#FFFFFF>{receiver}</#FFFFFF> the head of <#FFFFFF>{name}</#FFFFFF> x{amount}.'
     error: '<#FF4D4F>Could not load skin for <#FFFFFF>{name}</#FFFFFF>.'
   stats:
-   jumpandrun:
-    usage: '<gray>Usage:</gray> <white>/stats jumpandrun</white>'
-    unavailable: '<#FF4D4F>Jump & Run statistics are currently unavailable.</#FF4D4F>'
-    none: '<#8799ae>You have not completed any Jump & Run runs yet.</#8799ae>'
-    no-record: '<#8799ae>no record</#8799ae>'
-    no-date: '<#8799ae>unknown</#8799ae>'
-    self: '<gradient:#2AF598:#009EFD>Jump & Run</gradient> <gray>Runs:</gray> <white>{runs}</white> <gray>| PB:</gray> <white>{time}</white> <gray>({date})</gray>'
-
+    jumpandrun:
+      usage: '<gray>Usage:</gray> <white>/stats jumpandrun</white>'
+      unavailable: '<#FF4D4F>Jump & Run statistics are currently unavailable.</#FF4D4F>'
+      none: '<#8799ae>You have not completed any Jump & Run runs yet.</#8799ae>'
+      no-record: '<#8799ae>no record</#8799ae>'
+      no-date: '<#8799ae>unknown</#8799ae>'
+      self: '<gradient:#2AF598:#009EFD>Jump & Run</gradient> <gray>Runs:</gray> <white>{runs}</white> <gray>| PB:</gray> <white>{time}</white> <gray>({date})</gray>'
 
 # ----------------------------------------------------------
 # Errors

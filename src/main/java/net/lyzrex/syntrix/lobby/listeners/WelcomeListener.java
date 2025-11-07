@@ -103,7 +103,7 @@ public final class WelcomeListener implements Listener {
                     "welcome.first.toPlayer",
                     "<gradient:#2AF598:#009EFD>Welcome</gradient> <#FFFFFF><player> <#8799ae>to the network!"
             );
-            p.sendMessage(renderWithPrefix(p, toPlayer));
+            p.sendActionBar(renderWithPrefix(p, toPlayer));
 
 
             if (plugin.getConfig().getBoolean("welcome.firstJoin.broadcast", true) && !(vanished && suppressJoinQuit)) {
@@ -192,7 +192,6 @@ public final class WelcomeListener implements Listener {
     }
 
 
-
     private Component renderWithPrefix(Player p, String raw) {
         if (raw == null) raw = "";
         String fixed = raw.contains("{player}") ? raw.replace("{player}", "<player>") : raw;
@@ -211,7 +210,7 @@ public final class WelcomeListener implements Listener {
 
     private void broadcastWithPrefix(Component msgNoPrefix) {
         Component withPrefix = mm.deserialize(MessageUtilPrefix()).append(msgNoPrefix);
-        Bukkit.getOnlinePlayers().forEach(pl -> pl.sendMessage(withPrefix));
+        Bukkit.getOnlinePlayers().forEach(pl -> pl.sendActionBar(withPrefix));
         Bukkit.getConsoleSender().sendMessage(withPrefix);
     }
 

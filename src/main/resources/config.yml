@@ -148,7 +148,6 @@ commands:
   skull:       { enabled: true, permission: syntrix.skull }
   time:        { enabled: true, permission: syntrix.time }
 
-
 # ----------------------------------------------------------
 # TimeKeeperTask
 # ----------------------------------------------------------
@@ -159,15 +158,14 @@ timeControl:
   intervalTicks: 200
   freeze: true
 
-  # ----------------------------------------------------------
-  # Weather
-  # ----------------------------------------------------------
-  weatherControl:
-    enabled: true
-    world: ""
-    intervalTicks: 200
-    lock-sun: true
-
+# ----------------------------------------------------------
+# Weather
+# ----------------------------------------------------------
+weatherControl:
+  enabled: true
+  world: ""
+  intervalTicks: 200
+  lock-sun: true
 
 # ----------------------------------------------------------
 # Partikel-Ring am Spawn (SpawnParticleRingTask)
@@ -187,7 +185,6 @@ player-data:
   folder: player-data
   track-last-quit: true
 
-
 # ----------------------------------------------------------
 # Death Logging
 # ----------------------------------------------------------
@@ -202,7 +199,6 @@ deathLogs:
     enabled: true
     permission: ''
     message: '<gray>[Death]</gray> <red>{player}</red> <gray>starb bei</gray> <yellow>{x}</yellow> <gray>, {y}, {z}</gray> <gray>in {world}</gray> <gray>({time})</gray>'
-
 
 # ----------------------------------------------------------
 # Skull System

@@ -22,12 +22,20 @@ public final class SetSpawnCommand extends BaseCommand {
                              @NotNull String label,
                              @NotNull String[] args) {
 
-        if (!(sender instanceof Player p)) return true;
+        if (!(sender instanceof Player p)) {
+            ms.send(sender, plugin.messages().getString(
+                    "commands.setspawn.player-only",
+                    "<red>This command can only be used by players.</red>"
+            ));
+            return true;
+        }
 
         String perm = plugin.getConfig().getString("commands.setspawn.permission", "syntrix.setspawn");
         if (!p.hasPermission(perm)) {
-            ms.send(p, plugin.messages().getString("general.no-permission",
-                    "<red>You do not have permission.</red>"));
+            ms.send(p, plugin.messages().getString(
+                    "commands.setspawn.no-permission",
+                    "<red>You do not have permission.</red>"
+            ));
             return true;
         }
 

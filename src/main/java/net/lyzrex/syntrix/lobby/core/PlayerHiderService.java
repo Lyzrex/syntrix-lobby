@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby.core;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -44,7 +45,7 @@ public final class PlayerHiderService implements Listener {
                 case VIP  -> "playerHider.set.vip";
                 case NONE -> "playerHider.set.none";
             };
-            viewer.sendActionBar(mm.deserialize(plugin.messages().getString(key, "<gray>Updated</gray>")));
+            MessageUtil.send(viewer, plugin, key, "<gray>Updated</gray>");
         }
     }
 

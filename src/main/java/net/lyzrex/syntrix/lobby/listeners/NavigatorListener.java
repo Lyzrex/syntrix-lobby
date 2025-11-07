@@ -2,6 +2,7 @@ package net.lyzrex.syntrix.lobby.listeners;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
+import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -127,7 +128,7 @@ public final class NavigatorListener implements Listener {
         playSound(p, "navigator.sounds.click", "navigator.sounds.volume", "navigator.sounds.pitch-click");
         String action = plugin.messages().getString("navigator.actionbar",
                 "<gray>Connecting to <white>{server}</white>...</gray>").replace("{server}", server);
-        p.sendActionBar(mm.deserialize(action));
+        MessageUtil.sendRaw(p, plugin, action);
 
         connectBungee(p, server);
     }

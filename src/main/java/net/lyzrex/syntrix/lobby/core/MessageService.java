@@ -4,6 +4,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 
 public final class MessageService {
@@ -32,12 +33,33 @@ public final class MessageService {
 
     public void send(CommandSender sender, String msg) {
         String prefix = prefix();
-        sender.sendMessage(mm.deserialize(prefix + (msg == null ? "" : msg)));
+        if (msg == null || msg.isBlank()) {
+            if (prefix.isBlank()) {
+                return;
+            }
+            if (sender instanceof Player player) {
+                player.sendActionBar(mm.deserialize(prefix));
+            } else {
+                sender.sendMessage(mm.deserialize(prefix));
+            }
+            return;
+        }
+
+        String message = prefix + msg;
+        if (sender instanceof Player player) {
+            player.sendActionBar(mm.deserialize(message));
+        } else {
+            sender.sendMessage(mm.deserialize(message));
+        }
     }
 
 
     public void sendRaw(CommandSender sender, String msg) {
-        sender.sendMessage(mm.deserialize(msg == null ? "" : msg));
+        if (sender instanceof Player player) {
+            player.sendActionBar(mm.deserialize(msg == null ? "" : msg));
+        } else {
+            sender.sendMessage(mm.deserialize(msg == null ? "" : msg));
+        }
     }
 
 

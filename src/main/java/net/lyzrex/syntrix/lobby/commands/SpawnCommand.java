@@ -22,10 +22,22 @@ public final class SpawnCommand extends BaseCommand {
                              @NotNull Command cmd,
                              @NotNull String label,
                              @NotNull String[] args) {
-        if (!(sender instanceof Player p)) return true;
+        if (!(sender instanceof Player p)) {
+            ms.send(sender, plugin.messages().getString(
+                    "commands.spawn.player-only",
+                    "<red>This command can only be used by players.</red>"
+            ));
+            return true;
+        }
 
         final String perm = plugin.getConfig().getString("commands.spawn.permission", "syntrix.spawn");
-        if (perm != null && !perm.isBlank() && !p.hasPermission(perm)) return true;
+        if (perm != null && !perm.isBlank() && !p.hasPermission(perm)) {
+            ms.send(p, plugin.messages().getString(
+                    "commands.spawn.no-permission",
+                    "<red>You do not have permission.</red>"
+            ));
+            return true;
+        }
 
         // /spawn autojoin [on|off]
         if (args.length >= 1 && "autojoin".equalsIgnoreCase(args[0])) {
@@ -58,7 +70,11 @@ public final class SpawnCommand extends BaseCommand {
                 }
             }
             // Usage fallback
-            ms.send(p, "<gray>Usage:</gray> <white>/" + label + " autojoin [on|off]</white>");
+            String usage = plugin.messages().getString(
+                    "commands.spawn.autojoin-usage",
+                    "<gray>Usage:</gray> <white>/%label% autojoin [on|off]</white>"
+            ).replace("%label%", label);
+            ms.send(p, usage);
             return true;
         }
 
@@ -66,7 +82,10 @@ public final class SpawnCommand extends BaseCommand {
         final String worldName = plugin.getConfig().getString("lobby.world", "world");
         final World world = Bukkit.getWorld(worldName);
         if (world == null) {
-            ms.send(p, "<red>Lobby world not found:</red> <white>" + worldName + "</white>");
+            ms.send(p, plugin.messages().getString(
+                            "commands.spawn.world-missing",
+                            "<red>Lobby world not found:</red> <white>{world}</white>")
+                    .replace("{world}", worldName));
             return true;
         }
 
