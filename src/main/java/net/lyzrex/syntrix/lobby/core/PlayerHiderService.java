@@ -45,7 +45,7 @@ public final class PlayerHiderService implements Listener {
                 case VIP  -> "playerHider.set.vip";
                 case NONE -> "playerHider.set.none";
             };
-            MessageUtil.send(viewer, plugin, key, "<gray>Updated</gray>");
+            MessageUtil.send(viewer, plugin, key, "<#8799ae>Updated.</#8799ae>");
         }
     }
 

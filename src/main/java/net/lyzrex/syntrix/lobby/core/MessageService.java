@@ -32,25 +32,26 @@ public final class MessageService {
     }
 
     public void send(CommandSender sender, String msg) {
-        String prefix = prefix();
-        if (msg == null || msg.isBlank()) {
-            if (prefix.isBlank()) {
+        if (sender instanceof Player player) {
+            if (msg == null || msg.isBlank()) {
                 return;
             }
-            if (sender instanceof Player player) {
-                player.sendActionBar(mm.deserialize(prefix));
-            } else {
-                sender.sendMessage(mm.deserialize(prefix));
-            }
+            player.sendActionBar(mm.deserialize(msg));
             return;
         }
 
-        String message = prefix + msg;
-        if (sender instanceof Player player) {
-            player.sendActionBar(mm.deserialize(message));
-        } else {
-            sender.sendMessage(mm.deserialize(message));
+        String prefix = prefix();
+        String body = msg == null ? "" : msg;
+        if (body.isBlank() && prefix.isBlank()) {
+            return;
         }
+
+        String payload = body.isBlank() ? prefix : prefix + body;
+        if (payload.isBlank()) {
+            return;
+        }
+
+        sender.sendMessage(mm.deserialize(payload));
     }
 
 

@@ -54,7 +54,7 @@ public final class WelcomeListener implements Listener {
 
 
             if (plugin.vanish().isVanished(p.getUniqueId())) {
-                MessageUtil.send(p, plugin, "vanish.still-vanished", "<gray>You are still vanished.</gray>");
+                MessageUtil.send(p, plugin, "vanish.still-vanished", "<#8799ae>You remain vanished.</#8799ae>");
             }
 
 
@@ -62,7 +62,7 @@ public final class WelcomeListener implements Listener {
             String autoPerm = plugin.getConfig().getString("vanish.auto.permission", "syntrix.vanish.auto");
             if (autoEnabled && autoPerm != null && p.hasPermission(autoPerm) && !plugin.vanish().isVanished(p.getUniqueId())) {
                 plugin.vanish().setVanished(p.getUniqueId(), true);
-                MessageUtil.send(p, plugin, "vanish.enabled", "<green>Vanish enabled.</green>");
+                MessageUtil.send(p, plugin, "vanish.enabled", "<gradient:#2AF598:#009EFD>Vanish enabled.</gradient>");
                 vanished = true;
             }
         }
@@ -93,7 +93,7 @@ public final class WelcomeListener implements Listener {
                     "welcome.join",
                     "<#2AF598>[+]</#2AF598> <#FFFFFF><player>"
             );
-            broadcastWithPrefix(renderFor(p, joinMsg));
+            broadcastActionBar(renderFor(p, joinMsg));
         }
 
 
@@ -103,7 +103,7 @@ public final class WelcomeListener implements Listener {
                     "welcome.first.toPlayer",
                     "<gradient:#2AF598:#009EFD>Welcome</gradient> <#FFFFFF><player> <#8799ae>to the network!"
             );
-            p.sendActionBar(renderWithPrefix(p, toPlayer));
+            p.sendActionBar(renderFor(p, toPlayer));
 
 
             if (plugin.getConfig().getBoolean("welcome.firstJoin.broadcast", true) && !(vanished && suppressJoinQuit)) {
@@ -111,7 +111,7 @@ public final class WelcomeListener implements Listener {
                         "welcome.first.broadcast",
                         "<#F6C35D>Everyone welcome <#FFFFFF><player></#FFFFFF> <#F6C35D>!"
                 );
-                broadcastWithPrefix(renderFor(p, bc));
+                broadcastActionBar(renderFor(p, bc));
             }
 
 
@@ -178,7 +178,7 @@ public final class WelcomeListener implements Listener {
                     "welcome.quit",
                     "<#FF4D4F>[-]</#FF4D4F> <#FFFFFF><player>"
             );
-            broadcastWithPrefix(renderFor(p, quitMsg));
+            broadcastActionBar(renderFor(p, quitMsg));
         }
 
         if (plugin.getConfig().getBoolean("player-data.enabled", true)
@@ -192,14 +192,6 @@ public final class WelcomeListener implements Listener {
     }
 
 
-    private Component renderWithPrefix(Player p, String raw) {
-        if (raw == null) raw = "";
-        String fixed = raw.contains("{player}") ? raw.replace("{player}", "<player>") : raw;
-        TagResolver resolver = Placeholder.unparsed("player", p.getName());
-        return mm.deserialize(MessageUtilPrefix() + fixed, resolver);
-    }
-
-
     private Component renderFor(Player p, String raw) {
         if (raw == null) raw = "";
         String fixed = raw.contains("{player}") ? raw.replace("{player}", "<player>") : raw;
@@ -208,10 +200,14 @@ public final class WelcomeListener implements Listener {
     }
 
 
-    private void broadcastWithPrefix(Component msgNoPrefix) {
-        Component withPrefix = mm.deserialize(MessageUtilPrefix()).append(msgNoPrefix);
-        Bukkit.getOnlinePlayers().forEach(pl -> pl.sendActionBar(withPrefix));
-        Bukkit.getConsoleSender().sendMessage(withPrefix);
+    private void broadcastActionBar(Component message) {
+        Bukkit.getOnlinePlayers().forEach(pl -> pl.sendActionBar(message));
+
+        String prefix = MessageUtilPrefix();
+        Component consoleMessage = prefix.isBlank()
+                ? message
+                : mm.deserialize(prefix).append(message);
+        Bukkit.getConsoleSender().sendMessage(consoleMessage);
     }
 
 

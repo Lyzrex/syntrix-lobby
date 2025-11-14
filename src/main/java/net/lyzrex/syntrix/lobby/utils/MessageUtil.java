@@ -38,32 +38,33 @@ public final class MessageUtil {
     public static void sendCooldown(Player p, SyntrixLobby plugin, double secondsLeft) {
         String tmpl = plugin.messages().getString(
                 "doublejump.cooldown",
-                "<red>Double jump is on cooldown for {time}s.</red>"
+                "<gradient:#2AF598:#009EFD>Double Jump</gradient> <#8799ae>recharging:</#8799ae> <white>{time}s</white>"
         );
         String msg = tmpl.replace("{time}", String.format(Locale.US, "%.1f", Math.max(0.0, secondsLeft)));
-        p.sendActionBar(mm.deserialize(prefix(plugin) + msg));
+        p.sendActionBar(mm.deserialize(msg));
     }
 
     private static void sendMiniMessage(CommandSender sender, String prefix, String messageBody) {
-        if ((messageBody == null || messageBody.isBlank()) && prefix.isBlank()) {
+        String body = messageBody == null ? "" : messageBody;
+
+        if (sender instanceof Player player) {
+            if (body.isBlank()) {
+                return;
+            }
+            player.sendActionBar(mm.deserialize(body));
             return;
         }
 
-        String payload;
-        if (messageBody == null || messageBody.isBlank()) {
-            payload = prefix;
-        } else {
-            payload = prefix + messageBody;
+        String effectivePrefix = prefix == null ? "" : prefix;
+        if (body.isBlank() && effectivePrefix.isBlank()) {
+            return;
         }
 
+        String payload = body.isBlank() ? effectivePrefix : effectivePrefix + body;
         if (payload.isBlank()) {
             return;
         }
 
-        if (sender instanceof Player player) {
-            player.sendActionBar(mm.deserialize(payload));
-        } else {
-            sender.sendMessage(mm.deserialize(payload));
-        }
+        sender.sendMessage(mm.deserialize(payload));
     }
 }

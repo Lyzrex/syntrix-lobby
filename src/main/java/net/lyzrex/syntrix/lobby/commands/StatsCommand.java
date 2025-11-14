@@ -44,7 +44,7 @@ public final class StatsCommand extends BaseCommand {
 
         if (args.length == 0 || !args[0].equalsIgnoreCase("jumpandrun")) {
             String usage = plugin.messages().getString("stats.jumpandrun.usage",
-                    "<gray>Usage:</gray> <white>/stats jumpandrun</white>");
+                    "<gradient:#2AF598:#009EFD>Stats</gradient> <#8799ae>usage:</#8799ae> <white>/stats jumpandrun</white>");
             MessageUtil.sendActionBar(player, usage);
             return true;
         }
@@ -52,30 +52,30 @@ public final class StatsCommand extends BaseCommand {
         JumpAndRunService service = plugin.jumpAndRun();
         if (service == null) {
             MessageUtil.sendActionBar(player, plugin.messages().getString("stats.jumpandrun.unavailable",
-                    "<red>Jump & Run statistics are currently unavailable.</red>"));
+                    "<gradient:#F6C35D:#F57200>Jump & Run</gradient> <#8799ae>statistics are currently unavailable.</#8799ae>"));
             return true;
         }
 
         PlayerStats stats = service.stats(player.getUniqueId());
         if (stats.completions() <= 0) {
             MessageUtil.sendActionBar(player, plugin.messages().getString("stats.jumpandrun.none",
-                    "<gray>No Jump & Run runs recorded yet.</gray>"));
+                    "<#8799ae>No Jump & Run runs recorded yet.</#8799ae>"));
             return true;
         }
 
         String timeFormatted = stats.bestTimeMillis() == null
                 ? plugin.messages().getString("stats.jumpandrun.no-record",
-                "<gray>no record</gray>")
+                "<#8799ae>no record</#8799ae>")
                 : service.formatDuration(stats.bestTimeMillis());
 
         String dateFormatted = stats.bestTimestampMillis() == null
                 ? plugin.messages().getString("stats.jumpandrun.no-date",
-                "<gray>unknown</gray>")
+                "<#8799ae>unknown</#8799ae>")
                 : RECORD_FORMAT.format(Instant.ofEpochMilli(stats.bestTimestampMillis()));
 
         String template = plugin.messages().getString("stats.jumpandrun.self",
-                "<gradient:#2AF598:#009EFD>Jump & Run</gradient> <gray>Runs:</gray> <white>{runs}</white> "
-                        + "<gray>| PB:</gray> <white>{time}</white> <gray>({date})</gray>");
+                "<gradient:#2AF598:#009EFD>Jump & Run</gradient> <#8799ae>Runs:</#8799ae> <white>{runs}</white> "
+                        + "<#8799ae>| PB:</#8799ae> <white>{time}</white> <#8799ae>({date})</#8799ae>");
 
         String message = template
                 .replace("{runs}", Integer.toString(Math.max(0, stats.completions())))

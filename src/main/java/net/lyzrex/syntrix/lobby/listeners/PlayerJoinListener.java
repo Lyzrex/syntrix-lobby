@@ -133,7 +133,7 @@ public final class PlayerJoinListener implements Listener {
 
             ItemStack placeholder = new ItemStack(mat);
             ItemMeta meta = placeholder.getItemMeta();
-            meta.displayName(mm.deserialize("<gradient:#2AF598:#009EFD>Coming Soon</gradient>"));
+            meta.displayName(mm.deserialize("<gradient:#2AF598:#009EFD><bold>✨ Coming Soon</bold></gradient>"));
             meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
             meta.getPersistentDataContainer().set(SyntrixLobby.ITEM_LOCK, PersistentDataType.BYTE, (byte) 1);
             placeholder.setItemMeta(meta);
