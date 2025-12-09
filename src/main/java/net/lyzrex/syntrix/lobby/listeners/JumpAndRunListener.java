@@ -111,7 +111,6 @@ public final class JumpAndRunListener implements Listener {
         BukkitRunnable task;
         long startNano;
         long displayBaseNano;
-        long checkpointElapsedMillis;
         String persistentStatus;
         long statusExpiryMillis;
 
@@ -135,7 +134,6 @@ public final class JumpAndRunListener implements Listener {
             this.checkpointIndex = 0;
             this.startNano = System.nanoTime();
             this.displayBaseNano = this.startNano;
-            this.checkpointElapsedMillis = 0L;
             this.persistentStatus = "";
             this.statusExpiryMillis = 0L;
         }
@@ -288,7 +286,7 @@ public final class JumpAndRunListener implements Listener {
         if (run.nextIndex > 0) {
             placePlatform(run, run.nextIndex);
         }
-        player.teleport(steps.get(0).clone().add(0, 0.2, 0));
+        teleportToStep(player, run, run.lastReachedIndex);
 
         playSound(player, "start", "block.note_block.pling");
         showActionBar(player, run, "jumpandrun.actionbar.start", "<green>• Go!</green>");
@@ -370,7 +368,6 @@ public final class JumpAndRunListener implements Listener {
 
         if (run.checkpoints.contains(run.lastReachedIndex)) {
             run.checkpointIndex = run.lastReachedIndex;
-            run.checkpointElapsedMillis = Duration.ofNanos(System.nanoTime() - run.displayBaseNano).toMillis();
             if (run.lastReachedIndex != 0) {
                 showActionBar(player, run, "jumpandrun.actionbar.checkpoint", "<green>Checkpoint reached!</green>");
                 playSound(player, "checkpoint", "block.note_block.bell");
@@ -495,18 +492,41 @@ public final class JumpAndRunListener implements Listener {
         showActionBar(player, run, "jumpandrun.actionbar.reset", "<red>Reset to checkpoint.</red>");
 
         run.lastReachedIndex = run.checkpointIndex;
-        long checkpointMillis = Math.max(0L, run.checkpointElapsedMillis);
-        long offsetNanos = Duration.ofMillis(checkpointMillis).toNanos();
-        run.displayBaseNano = System.nanoTime() - offsetNanos;
         run.nextIndex = Math.min(run.lastReachedIndex + 1, run.steps.size() - 1);
         placePlatform(run, run.lastReachedIndex);
         if (run.nextIndex > run.lastReachedIndex) {
             placePlatform(run, run.nextIndex);
         }
-        player.teleport(run.steps.get(run.lastReachedIndex).clone().add(0, 0.2, 0));
+        teleportToStep(player, run, run.lastReachedIndex);
         player.setFallDistance(0.0F);
         showActionBar(player, run, null, null);
     }
+
+    private void teleportToStep(Player player, Run run, int index) {
+        if (run.steps.isEmpty()) {
+            return;
+        }
+
+        int clampedIndex = Math.max(0, Math.min(index, run.steps.size() - 1));
+        Location origin = run.steps.get(clampedIndex);
+        Location target = origin.clone().add(0, 0.2, 0);
+
+        int lookIndex = run.nextIndex > clampedIndex
+                ? run.nextIndex
+                : Math.min(run.steps.size() - 1, clampedIndex + 1);
+        if (lookIndex != clampedIndex) {
+            Location lookAt = run.steps.get(lookIndex);
+            if (lookAt.getWorld() != null && origin.getWorld() != null && lookAt.getWorld().equals(origin.getWorld())) {
+                Vector direction = lookAt.toVector().subtract(origin.toVector());
+                if (direction.lengthSquared() > 1.0E-4) {
+                    target.setDirection(direction);
+                }
+            }
+        }
+
+        player.teleport(target);
+    }
+
 
     private void stopRun(Player player, boolean cancelled) {
         Run run = removeRun(player);

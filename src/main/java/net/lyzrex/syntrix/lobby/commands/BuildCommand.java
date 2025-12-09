@@ -61,7 +61,7 @@ public final class BuildCommand extends BaseCommand {
 
             pdc.remove(SyntrixLobby.BUILD_MODE);
             BYPASS_PLAYERS.remove(p.getUniqueId());
-            p.setGameMode(GameMode.ADVENTURE);
+            p.setGameMode(GameMode.SURVIVAL);
 
             if (plugin.getConfig().getBoolean("build.clear-on-disable", true)) {
                 p.getInventory().clear();

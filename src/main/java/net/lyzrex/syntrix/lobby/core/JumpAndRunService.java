@@ -83,9 +83,7 @@ public final class JumpAndRunService {
         records.put(uuid, updated);
         saveData();
 
-        if (isNewRecord || previous == null || !previous.name().equals(name)) {
-            updateHologram();
-        }
+        updateHologram();
 
         return new LeaderboardResult(updated.bestTimeMillis(), isNewRecord);
     }
