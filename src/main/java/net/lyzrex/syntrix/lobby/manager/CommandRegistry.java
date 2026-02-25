@@ -21,6 +21,8 @@ public final class CommandRegistry {
         add(plugin, "fly", new FlyCommand(plugin));
         add(plugin, "jumpandrunholo", new JumpAndRunHologramCommand(plugin));
         add(plugin, "stats", new StatsCommand(plugin));
+        add(plugin, "verify", new VerifyCommand(plugin));
+        add(plugin, "link", new VerifyCommand(plugin));
     }
 
     private static void add(SyntrixLobby plugin, String name, TabExecutor exec) {

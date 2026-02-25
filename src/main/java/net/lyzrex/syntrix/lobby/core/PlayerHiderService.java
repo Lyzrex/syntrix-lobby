@@ -203,7 +203,7 @@ public final class PlayerHiderService implements Listener {
         meta.displayName(mm.deserialize(name == null ? "<white>Option</white>" : name));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
 
-        meta.getPersistentDataContainer().set(SyntrixLobby.SILENT_TOG, PersistentDataType.STRING, mode.name());
+        meta.getPersistentDataContainer().set(SyntrixLobby.FLY_STATE, PersistentDataType.STRING, mode.name());
         item.setItemMeta(meta);
         return item;
     }

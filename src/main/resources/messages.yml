@@ -27,7 +27,7 @@ jumpandrun:
     - '<#8799ae>Right-click to start'
     - '<#8799ae>a Jump & Run route'
   actionbar:
-    base: '<#8799ae>[{time}] - Step <#2AF598>{current}</#2AF598>/<white>{total}</white> ({left} left to Checkpoint)</#8799ae>{status}'
+    base: '<#8799ae>[{time}] - Step <#2AF598>{current}</#2AF598>/<#FFFFFF>{total}</#FFFFFF> ({left} left to Checkpoint)</#8799ae>{status}'
     start: '<#2AF598>• Go!</#2AF598>'
     checkpoint: '<#2AF598>Checkpoint reached!</#2AF598>'
     reset: '<#FF4D4F>Reset to checkpoint.</#FF4D4F>'
@@ -54,7 +54,7 @@ fly:
   no-permission: '<#FF4D4F>You do not have permission to fly.</#FF4D4F>'
   no-permission-others: '<#FF4D4F>You do not have permission to change other players'' flight.</#FF4D4F>'
   creative: '<#FF4D4F>You cannot disable flight for creative or spectator players.</#FF4D4F>'
-  usage: '<gray>Usage:</gray> <white>/fly [player] [on|off|toggle]</white>'
+  usage: '<#8799ae>Usage:</#8799ae> <#FFFFFF>/fly [player] [on|off|toggle]</#FFFFFF>'
   auto-enabled: '<#8799ae>Flight enabled automatically.</#8799ae>'
 
 # ----------------------------------------------------------
@@ -81,11 +81,11 @@ navigator:
 # Vanish
 # ----------------------------------------------------------
 vanish:
-  enabled: '<#8799ae>You are now <green>vanished</green>.'
-  disabled: '<#8799ae>You are now <red>visible</red>.'
-  still-vanished: '<#8799ae>You are still <green>vanished</green>.'
+  enabled: '<#8799ae>You are now <#2AF598>vanished</#2AF598>.'
+  disabled: '<#8799ae>You are now <#FF4D4F>visible</#FF4D4F>.'
+  still-vanished: '<#8799ae>You are still <#2AF598>vanished</#2AF598>.'
   private:
-    title: '<gray>Welcome (vanished)</gray>'
+    title: '<#8799ae>Welcome (vanished)</#8799ae>'
     subtitle: '<#8799ae>You are hidden.</#8799ae>'
 
 # ----------------------------------------------------------
@@ -101,19 +101,19 @@ jumppads:
   launch: '<#8799ae>Wheee! 🚀</#8799ae>'
 
 # ----------------------------------------------------------
-# Player Hider
+# Player Hider / Gadgets
 # ----------------------------------------------------------
 playerHider:
   item:
-    name: '<#FFFFFF><bold>👁 <gradient:#2AF598:#009EFD>Player Hider</gradient></bold>'
+    name: '<#FFFFFF><bold>✨ <gradient:#FF00FF:#00FFFF>Gadgets</gradient></bold>'
     lore:
-      - '<#8799ae>Right-click to choose'
-      - '<#8799ae>who you can see'
+      - '<#8799ae>Right-click to open'
+      - '<#8799ae>your gadgets'
   gui:
-    title: '<gradient:#2AF598:#009EFD>Player Hider</gradient>'
-    all: '<green>Show everyone</green>'
-    vip: '<gold>VIP only</gold>'
-    none: '<red>Show no one</red>'
+    title: '<gradient:#FF00FF:#00FFFF>Gadgets</gradient>'
+    all: '<#2AF598>Show everyone</#2AF598>'
+    vip: '<#F6C35D>VIP only</#F6C35D>'
+    none: '<#FF4D4F>Show no one</#FF4D4F>'
   set:
     all: '<#8799ae>Visibility: <#2AF598>Everyone</#2AF598>'
     vip: '<#8799ae>Visibility: <#F6C35D>VIP only</#F6C35D>'
@@ -129,8 +129,8 @@ welcome:
     toPlayer: '<gradient:#2AF598:#009EFD>Welcome</gradient> <#FFFFFF>{player} <#8799ae>to the network!'
     broadcast: '<#F6C35D>Everyone welcome <#FFFFFF>{player}</#FFFFFF> <#F6C35D>!'
   effects:
-    title: '<gradient:#4FACFE:#00F2FE>Welcome</gradient>'
-    subtitle: '<#8799ae>to <#FFFFFF>Syntrix</#FFFFFF><#8799ae>!'
+    title: '<gradient:#2AF598:#009EFD>Welcome</gradient>'
+    subtitle: '<#8799ae>to <#FFFFFF>Lythrion</#FFFFFF><#8799ae>!'
 
 # ----------------------------------------------------------
 # Commands
@@ -150,14 +150,14 @@ commands:
     success: '<#2AF598>Lobby reloaded successfully</#2AF598> <#8799ae>in <#FFFFFF>{time}ms</#FFFFFF><#8799ae>.'
   leaderboard:
     commands:
-      usage: '<gray>Usage:</gray> <white>/jumpandrunholo <spawn|remove|update></white>'
+      usage: '<#8799ae>Usage:</#8799ae> <#FFFFFF>/jumpandrunholo <spawn|remove|update></#FFFFFF>'
       created: '<#2AF598>Jump & Run hologram spawned.</#2AF598>'
       removed: '<#FF4D4F>Jump & Run hologram removed.</#FF4D4F>'
       updated: '<#2AF598>Jump & Run hologram updated.</#2AF598>'
       no-permission: '<#FF4D4F>You do not have permission to manage the leaderboard hologram.</#FF4D4F>'
       player-only: '<#FF4D4F>Only players can perform this action.</#FF4D4F>'
   time:
-    usage: '<gray>Usage:</gray> <white>/time set <ticks></white> | <white>/time auto on|off</white> | <white>/time lock <ticks></white>'
+    usage: '<#8799ae>Usage:</#8799ae> <#FFFFFF>/time set <ticks></#FFFFFF> | <#FFFFFF>/time auto on|off</#FFFFFF> | <#FFFFFF>/time lock <ticks></#FFFFFF>'
     set:
       ok: '<#2AF598>Time set to <#FFFFFF>{ticks}</#FFFFFF>.</#2AF598>'
     auto:
@@ -171,12 +171,12 @@ commands:
     error: '<#FF4D4F>Could not load skin for <#FFFFFF>{name}</#FFFFFF>.'
   stats:
     jumpandrun:
-      usage: '<gray>Usage:</gray> <white>/stats jumpandrun</white>'
+      usage: '<#8799ae>Usage:</#8799ae> <#FFFFFF>/stats jumpandrun</#FFFFFF>'
       unavailable: '<#FF4D4F>Jump & Run statistics are currently unavailable.</#FF4D4F>'
       none: '<#8799ae>You have not completed any Jump & Run runs yet.</#8799ae>'
       no-record: '<#8799ae>no record</#8799ae>'
       no-date: '<#8799ae>unknown</#8799ae>'
-      self: '<gradient:#2AF598:#009EFD>Jump & Run</gradient> <gray>Runs:</gray> <white>{runs}</white> <gray>| PB:</gray> <white>{time}</white> <gray>({date})</gray>'
+      self: '<gradient:#2AF598:#009EFD>Jump & Run</gradient> <#8799ae>Runs:</#8799ae> <#FFFFFF>{runs}</#FFFFFF> <#8799ae>| PB:</#8799ae> <#FFFFFF>{time}</#FFFFFF> <#8799ae>({date})</#8799ae>'
 
 # ----------------------------------------------------------
 # Errors

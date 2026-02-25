@@ -1,9 +1,8 @@
 plugins {
     java
-
 }
 
-group = "net.syntrix"
+group = "net.lyzrex"
 version = "0.0.3-beta.5"
 
 java {
@@ -14,41 +13,21 @@ repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://oss.sonatype.org/content/repositories/snapshots/")
-
-    repositories {
-        maven("https://repo.papermc.io/repository/maven-public/")
-        maven {
-            url = uri("https://maven.pkg.github.com/Lyzrex/LythCore-API")
-            credentials {
-
-            }
-        }
-    }
-
-    dependencies {
-        compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
-        compileOnly("net.lythcore:lythcore-api:0.1.2")
-    }
-
-
-
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
-    options.release.set(21)
+    maven("https://maven.byteminer.net")
 }
 
+dependencies {
+
+    implementation("io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT")
+    implementation("de.murmelmeister.murmelapi:MurmelAPI:0.0.6-SNAPSHOT")
+    implementation("de.murmelmeister.library:MurmelLib:0.0.1-SNAPSHOT")
+    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.6")
+}
 
 tasks.processResources {
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     filesMatching("plugin.yml") {
         expand(mapOf("version" to project.version))
     }
-}
-
-
-val serverPlugins = findProperty("serverPluginsDir") as String?
-tasks.register<Copy>("copyPlugin") {
-    dependsOn(tasks.named("jar"))
-    from(layout.buildDirectory.file("libs/${project.name}-${project.version}.jar"))
-    into(serverPlugins ?: "${project.projectDir}/../server/plugins")
-}
 }

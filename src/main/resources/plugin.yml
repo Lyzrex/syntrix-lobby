@@ -4,6 +4,7 @@ version: ${version}
 api-version: "1.21"
 softdepend:
   - LythCore
+  - MurmelEssentials
 author: Lyzrex
 website: https://github.com/lyzrex
 description: LobbySystem for Lythrion
@@ -11,71 +12,30 @@ description: LobbySystem for Lythrion
 commands:
   spawn:
     description: Teleports you to the lobby spawn or toggles auto-join teleport.
-    usage: "/spawn [autojoin|autojoin on|autojoin off]"
-    permission: syntrix.spawn
   setspawn:
     description: Sets the lobby spawn to your current location.
-    usage: "/setspawn"
-    permission: syntrix.setspawn
   lobbyreload:
     description: Reloads config/messages and refreshes services.
-    usage: "/lobbyreload"
-    permission: syntrix.reload
   build:
     description: Toggles build mode (creative, no lobby item enforcement).
-    usage: "/build"
-    permission: syntrix.build
   skull:
     description: Gives you the head of a player.
-    usage: "/skull <player> [amount]"
-    permission: syntrix.skull
   setheight:
     description: Sets the death height for the height guard.
-    usage: "/setheight [y]"
-    permission: syntrix.setheight
   vanish:
     description: Toggles vanish (invisible/visible).
-    usage: "/vanish"
-    permission: syntrix.vanish
     aliases: [v]
   time:
     description: Controls lobby time (freeze/lock).
-    usage: "/time set <ticks> | /time auto on|off | /time lock <ticks>"
-    permission: syntrix.time
   fly:
     description: Toggles player flight in the lobby.
-    usage: "/fly [player] [on|off|toggle]"
-    permission: syntrix.fly
   jumpandrunholo:
     description: Manages the Jump & Run leaderboard hologram.
-    usage: "/jumpandrunholo <spawn|remove|update>"
-    permission: syntrix.jumpandrun.hologram
   stats:
     description: Shows personal lobby statistics.
-    usage: "/stats jumpandrun"
-    permission: syntrix.stats
-
-permissions:
-  syntrix.spawn:      { description: Allows /spawn,          default: true }
-  syntrix.setspawn:   { description: Allows /setspawn,       default: op }
-  syntrix.reload:     { description: Allows /lobbyreload,    default: op }
-  syntrix.build:      { description: Allows /build,          default: op }
-  syntrix.skull:      { description: Allows /skull,          default: op }
-  syntrix.setheight:  { description: Allows /setheight,      default: op }
-  syntrix.vanish:     { description: Allows /vanish,         default: op }
-  syntrix.time:       { description: Allows /time commands,  default: op }
-  syntrix.fly: { description: Allows /fly,            default: op }
-  syntrix.fly.others: { description: Allows /fly on others,  default: op }
-  syntrix.fly.auto: { description: Auto enable flight on join, default: op }
-  syntrix.jumpandrun.hologram: { description: Manage the Jump & Run hologram, default: op }
-  syntrix.protections.bypass: { description: Bypass lobby protections, default: op }
-  syntrix.stats: { description: Allows /stats command, default: true }
-
-  syntrix.vanish.see:  { description: See vanished players,     default: op }
-  syntrix.vanish.auto: { description: Auto-vanish on join,      default: op }
-
-  syntrix.chat.hex:     { description: Use hex colors in chat,  default: op }
-  syntrix.signs.color:  { description: Colored/MiniMessage signs, default: op }
-
-  syntrix.vip:           { description: Shown in 'VIP only' mode, default: op }
-  syntrix.hider.exempt:  { description: Never hidden by hider,    default: op }
+  verify:
+    description: Start the Discord verification process.
+    usage: /verify <DiscordName>
+  link:
+    description: Complete the Discord verification with a code.
+    usage: /link <code>

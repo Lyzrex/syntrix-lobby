@@ -2,14 +2,9 @@ package net.lyzrex.syntrix.lobby.listeners;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
-import net.lyzrex.syntrix.lobby.utils.MessageUtil;
-import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.Sound;
-import org.bukkit.block.Block;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,19 +17,17 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class NavigatorListener implements Listener {
 
     private final SyntrixLobby plugin;
     private static final MiniMessage mm = MiniMessage.miniMessage();
-
-    private final Map<UUID, Long> lastUseMs = new ConcurrentHashMap<>();
 
     public NavigatorListener(SyntrixLobby plugin) {
         this.plugin = plugin;
@@ -57,11 +50,11 @@ public final class NavigatorListener implements Listener {
     private void openGui(Player p) {
         if (!plugin.getConfig().getBoolean("navigator.enabled", true)) return;
 
-        int rows = Math.max(1, Math.min(6, plugin.getConfig().getInt("navigator.gui.rows", 3)));
+        int rows = Math.max(1, Math.min(6, plugin.getConfig().getInt("navigator.gui.rows", 5)));
         Inventory inv = Bukkit.createInventory(
                 p,
                 rows * 9,
-                mm.deserialize(plugin.messages().getString("navigator.title", "<green>Navigator</green>"))
+                mm.deserialize(plugin.messages().getString("navigator.title", "<gradient:#2AF598:#009EFD>Server Selector</gradient>"))
         );
 
         applyFiller(inv);
@@ -82,16 +75,16 @@ public final class NavigatorListener implements Listener {
             ItemStack icon = new ItemStack(mat);
             ItemMeta meta = icon.getItemMeta();
 
-            String disp = plugin.messages().getString("navigator.item-name",
-                    "<white><bold>⯈ {name}</bold></white>").replace("{name}", name);
-            meta.displayName(mm.deserialize(disp));
+            if (mat == Material.PLAYER_HEAD) {
+                ((SkullMeta) meta).setOwningPlayer(p);
+            }
 
-            List<String> loreLines = plugin.messages().getStringList("navigator.item-lore");
-            if (!loreLines.isEmpty()) {
+            meta.displayName(mm.deserialize(name));
+
+            List<String> customLore = (List<String>) map.get("lore");
+            if (customLore != null && !customLore.isEmpty()) {
                 List<net.kyori.adventure.text.Component> advLore = new ArrayList<>();
-                for (String line : loreLines) {
-                    advLore.add(mm.deserialize(line.replace("{server}", server).replace("{name}", name)));
-                }
+                for (String line : customLore) advLore.add(mm.deserialize(line));
                 meta.lore(advLore);
             }
 
@@ -102,7 +95,8 @@ public final class NavigatorListener implements Listener {
             if (slot >= 0 && slot < inv.getSize()) inv.setItem(slot, icon);
         }
 
-        playSound(p, "navigator.sounds.open", "navigator.sounds.volume", "navigator.sounds.pitch-open");
+        // Sound beim Öffnen des Navigators
+        p.playSound(p.getLocation(), Sound.ITEM_BOOK_PAGE_TURN, 1f, 1f);
         p.openInventory(inv);
     }
 
@@ -111,8 +105,7 @@ public final class NavigatorListener implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (e.getClickedInventory() == null || e.getCurrentItem() == null) return;
 
-        String expected = plugin.messages().getString("navigator.title", "Navigator")
-                .replaceAll("<[^>]+>", "");
+        String expected = plugin.messages().getString("navigator.title", "Server Selector").replaceAll("<[^>]+>", "");
         String current = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(e.getView().title());
         if (!current.toLowerCase(Locale.ROOT).contains(expected.toLowerCase(Locale.ROOT))) return;
 
@@ -125,12 +118,31 @@ public final class NavigatorListener implements Listener {
         String server = meta.getPersistentDataContainer().get(SyntrixLobby.NAV_SERVER, PersistentDataType.STRING);
         if (server == null || server.isBlank()) return;
 
-        playSound(p, "navigator.sounds.click", "navigator.sounds.volume", "navigator.sounds.pitch-click");
-        String action = plugin.messages().getString("navigator.actionbar",
-                "<gray>Connecting to <white>{server}</white>...</gray>").replace("{server}", server);
-        MessageUtil.sendRaw(p, plugin, action);
+        if (server.equalsIgnoreCase("discord")) {
+            p.closeInventory();
+            String link = "https://discord.gg/H998F9MxwX";
+            String prefix = plugin.getConfig().getString("prefix.text", "");
+            p.sendMessage(mm.deserialize(prefix + "<#5865F2>Join our Discord: <click:open_url:'" + link + "'><underlined>" + link + "</underlined></click>"));
 
-        connectBungee(p, server);
+            // Sound für Discord
+            p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+            return;
+        }
+
+        if (server.equals("citybuild")) {
+            p.closeInventory();
+            String prefix = plugin.getConfig().getString("prefix.text", "");
+            p.sendMessage(mm.deserialize(prefix + "<#8799ae>Connecting to <#2AF598>CityBuild</#2AF598>..."));
+
+            // Erfolgreicher Sound beim Verbinden
+            p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 2f);
+            connectBungee(p, server);
+        } else {
+            p.sendMessage(mm.deserialize("<#FF4D4F>This server is currently in maintenance!"));
+
+            // Error Sound für Maintenance Server
+            p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+        }
     }
 
     private void applyFiller(Inventory inv) {
@@ -153,17 +165,7 @@ public final class NavigatorListener implements Listener {
                         if (pane != null) inv.setItem(r * 9 + c, pane);
                     }
                 }
-                return;
             }
-        }
-
-        if (root.getBoolean("filler", false)) {
-            ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-            ItemMeta m = pane.getItemMeta();
-            m.displayName(mm.deserialize("<gray>"));
-            m.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
-            pane.setItemMeta(m);
-            for (int i = 0; i < inv.getSize(); i++) inv.setItem(i, pane);
         }
     }
 
@@ -173,24 +175,11 @@ public final class NavigatorListener implements Listener {
         if (mat == null || mat == Material.AIR) return null;
         ItemStack it = new ItemStack(mat);
         ItemMeta meta = it.getItemMeta();
-        String name = sec.getString("name", "");
-        if (name != null && !name.isBlank()) meta.displayName(mm.deserialize(name));
-        else meta.displayName(null);
+        String name = sec.getString("name", " ");
+        meta.displayName(mm.deserialize(name));
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
         it.setItemMeta(meta);
         return it;
-    }
-
-    private void playSound(Player p, String soundPath, String volPath, String pitchPath) {
-        String sn = plugin.getConfig().getString(soundPath, "UI_BUTTON_CLICK");
-        float vol = (float) plugin.getConfig().getDouble(volPath, 0.8);
-        float pit = (float) plugin.getConfig().getDouble(pitchPath, 1.2);
-        try {
-            Sound sound = SoundUtil.resolve(sn, Sound.UI_BUTTON_CLICK);
-            p.playSound(p.getLocation(), sound, vol, pit);
-        } finally {
-
-        }
     }
 
     private void connectBungee(Player p, String server) {
@@ -200,9 +189,7 @@ public final class NavigatorListener implements Listener {
             out.writeUTF("Connect");
             out.writeUTF(server);
             p.sendPluginMessage(plugin, "BungeeCord", b.toByteArray());
-        } catch (Exception ex) {
-            plugin.getLogger().warning("Failed to connect " + p.getName() + " to " + server + ": " + ex.getMessage());
-        }
+        } catch (Exception ex) {}
     }
 
     private static int asInt(Object o, int def) {

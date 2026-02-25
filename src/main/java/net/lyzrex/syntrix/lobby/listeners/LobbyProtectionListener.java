@@ -18,7 +18,7 @@ import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.block.Action;
 import org.bukkit.persistence.PersistentDataType;
-
+import org.bukkit.event.entity.CreatureSpawnEvent;
 
 public final class LobbyProtectionListener implements Listener {
 
@@ -55,13 +55,10 @@ public final class LobbyProtectionListener implements Listener {
         e.setCancelled(true);
     }
 
-
-
     @EventHandler
     public void onItemDrop(PlayerDropItemEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noDrop", true)) return;
         if (bypass(e.getPlayer())) return;
-
         e.setCancelled(true);
     }
 
@@ -72,8 +69,6 @@ public final class LobbyProtectionListener implements Listener {
         e.setCancelled(true);
     }
 
-
-
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent e) {
         if (!(e.getEntity() instanceof Player)) return;
@@ -83,7 +78,6 @@ public final class LobbyProtectionListener implements Listener {
                 (e.getDamager() instanceof Projectile proj) && (proj.getShooter() instanceof Player);
 
         if (damagerIsPlayer || damagerProjectileFromPlayer) {
-
             Player attacker = damagerIsPlayer ? (Player) e.getDamager()
                     : (Player) ((Projectile) e.getDamager()).getShooter();
             if (!bypass(attacker)) {
@@ -110,8 +104,6 @@ public final class LobbyProtectionListener implements Listener {
         player.setFallDistance(0.0F);
     }
 
-
-
     @EventHandler
     public void onFood(FoodLevelChangeEvent e) {
         if (!plugin.getConfig().getBoolean("protections.no-hunger", true)) return;
@@ -126,8 +118,6 @@ public final class LobbyProtectionListener implements Listener {
             }
         }
     }
-
-
 
     @EventHandler
     public void onInteract(PlayerInteractEvent e) {
@@ -168,6 +158,15 @@ public final class LobbyProtectionListener implements Listener {
         if (e.getAction() == Action.PHYSICAL
                 && plugin.getConfig().getBoolean("protections.protect-farmland", true)
                 && type == Material.FARMLAND) {
+            e.setCancelled(true);
+        }
+    }
+
+    // --- NEU: MOB SPAWNING VERHINDERN ---
+    @EventHandler
+    public void onMobSpawn(CreatureSpawnEvent e) {
+
+        if (e.getSpawnReason() != CreatureSpawnEvent.SpawnReason.CUSTOM) {
             e.setCancelled(true);
         }
     }

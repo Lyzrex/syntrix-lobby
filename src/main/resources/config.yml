@@ -5,9 +5,6 @@
 prefix:
   enabled: true
 
-# ----------------------------------------------------------
-# Lobby Spawn & Player Handling
-# ----------------------------------------------------------
 lobby:
   world: Lobby
   spawn:
@@ -23,10 +20,6 @@ join:
     allow-player-toggle: true
   clear-inventory: true
 
-# ----------------------------------------------------------
-# Protections
-# Gilt für: InteractionGuard, Hunger, etc.
-# ----------------------------------------------------------
 protections:
   block-pvp: true
   block-doors: true
@@ -43,16 +36,10 @@ protections:
   deathHeight: -64
   bypass-permission: syntrix.protections.bypass
 
-# ----------------------------------------------------------
-# Chat — HexColor & (optional) MiniMessage im Chat
-# ----------------------------------------------------------
 chat:
   enabled: true
   permission: syntrix.chat.hex
 
-# ----------------------------------------------------------
-# Sign System (Farben & MiniMessage auf Schildern)
-# ----------------------------------------------------------
 signs:
   enabled: true
   permission: syntrix.signs.color
@@ -61,32 +48,27 @@ signs:
   filter-empty-lines: false
 
 # ----------------------------------------------------------
-# Navigator GUI
+# Navigator GUI (Lythrion Design & Neue Items)
 # ----------------------------------------------------------
 navigator:
   enabled: true
 
   gui:
-    rows: 3
+    rows: 5
     filler:
       enabled: true
       pattern:
-        - "123.5.789"
-        - "1..456..9"
-        - "123.5.789"
+        - "111121111"
+        - "1.......1"
+        - "2.......2"
+        - "1.......1"
+        - "111121111"
       map:
-        "1": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-        "2": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-        "3": { material: RED_STAINED_GLASS_PANE,  name: "" }
-        "4": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-        "5": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-        "6": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-        "7": { material: RED_STAINED_GLASS_PANE,  name: "" }
-        "8": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-        "9": { material: BLUE_STAINED_GLASS_PANE, name: "" }
+        "1": { material: BLACK_STAINED_GLASS_PANE, name: " " }
+        "2": { material: GRAY_STAINED_GLASS_PANE, name: " " }
 
   trigger:
-    material: COMPASS
+    material: RECOVERY_COMPASS
     slot: 4
 
   sounds:
@@ -97,28 +79,64 @@ navigator:
     pitch-click: 1.6
 
   servers:
-    - slot: 13
-      material: NETHERITE_SCRAP
-      server: skyblock
-      name: "<gradient:#2AF598:#009EFD><bold>SkyBlock</bold>"
+    - slot: 20
+      material: DIAMOND_PICKAXE
+      server: citybuild
+      name: "<gradient:#2AF598:#009EFD><bold>CityBuild RPG</bold></gradient>"
       lore:
-        - "<#8799ae>Click to travel to"
-        - "<#2AF598>skyblock"
+        - ""
+        - "<#8799ae>Claim your land, level up skills,"
+        - "<#8799ae>and build your very own empire."
+        - ""
+        - "<#8799ae>Status: <#2AF598>Online"
+        - ""
+        - "<#EEDD44>➤ Click to Connect"
 
-# ----------------------------------------------------------
-# Double Jump
-# ----------------------------------------------------------
+    - slot: 22
+      material: OAK_SAPLING
+      server: skyblock
+      name: "<gradient:#FFD700:#FFA500><bold>SkyBlock</bold></gradient>"
+      lore:
+        - ""
+        - "<#8799ae>Start on a small island and"
+        - "<#8799ae>expand it to a massive kingdom."
+        - ""
+        - "<#8799ae>Status: <#FF4D4F>Maintenance"
+        - ""
+        - "<#FF4D4F>➤ Currently Unavailable"
+
+    - slot: 24
+      material: END_CRYSTAL
+      server: coredash
+      name: "<gradient:#D580FF:#AA00FF><bold>Core-Dash</bold></gradient>"
+      lore:
+        - ""
+        - "<#8799ae>A fast-paced minigame where"
+        - "<#8799ae>every second counts."
+        - ""
+        - "<#8799ae>Status: <#FF4D4F>Maintenance"
+        - ""
+        - "<#FF4D4F>➤ Currently Unavailable"
+
+    - slot: 40
+      material: PLAYER_HEAD
+      server: discord
+      name: "<gradient:#5865F2:#7289DA><bold>Discord</bold></gradient>"
+      lore:
+        - ""
+        - "<#8799ae>Join our community!"
+        - "<#5865F2>https://discord.gg/H998F9MxwX"
+        - ""
+        - "<#EEDD44>➤ Click to get Link"
+
 doublejump:
   enabled: true
-  permission: ""             # leer => keine Permission nötig
+  permission: ""
   cooldown-seconds: 1.0
   sound: ENTITY_FIREWORK_ROCKET_LAUNCH
   volume: 0.8
   pitch: 1.2
 
-# ----------------------------------------------------------
-# Flight
-# ----------------------------------------------------------
 fly:
   enabled: true
   permission: syntrix.fly
@@ -128,17 +146,11 @@ fly:
     enabled: true
     permission: syntrix.fly.auto
 
-# ----------------------------------------------------------
-# Build Mode
-# ----------------------------------------------------------
 build:
   enabled: true
   permission: syntrix.build
   clear-on-disable: true
 
-# ----------------------------------------------------------
-# Commands (Permissions)
-# ----------------------------------------------------------
 commands:
   spawn:       { enabled: true, permission: syntrix.spawn }
   setspawn:    { enabled: true, permission: syntrix.setspawn }
@@ -148,9 +160,6 @@ commands:
   skull:       { enabled: true, permission: syntrix.skull }
   time:        { enabled: true, permission: syntrix.time }
 
-# ----------------------------------------------------------
-# TimeKeeperTask
-# ----------------------------------------------------------
 timeControl:
   enabled: true
   world: ""
@@ -158,18 +167,12 @@ timeControl:
   intervalTicks: 200
   freeze: true
 
-# ----------------------------------------------------------
-# Weather
-# ----------------------------------------------------------
 weatherControl:
   enabled: true
   world: ""
   intervalTicks: 200
   lock-sun: true
 
-# ----------------------------------------------------------
-# Partikel-Ring am Spawn (SpawnParticleRingTask)
-# ----------------------------------------------------------
 spawnParticles:
   enabled: true
   type: SPELL_WITCH
@@ -177,39 +180,15 @@ spawnParticles:
   points: 60
   intervalTicks: 5
 
-# ----------------------------------------------------------
-# Player Logging (dateibasiert für WelcomeListener)
-# ----------------------------------------------------------
 player-data:
   enabled: true
   folder: player-data
   track-last-quit: true
 
-# ----------------------------------------------------------
-# Death Logging
-# ----------------------------------------------------------
-deathLogs:
-  enabled: true
-  time-format: 'yyyy-MM-dd HH:mm:ss'
-  coordinate-precision: 1
-  console:
-    enabled: true
-    format: '[Death] {time} {player} died in {world} at {x}, {y}, {z} ({cause})'
-  chat:
-    enabled: true
-    permission: ''
-    message: '<gray>[Death]</gray> <red>{player}</red> <gray>starb bei</gray> <yellow>{x}</yellow> <gray>, {y}, {z}</gray> <gray>in {world}</gray> <gray>({time})</gray>'
-
-# ----------------------------------------------------------
-# Skull System
-# ----------------------------------------------------------
 skull:
   enabled: true
   permission: syntrix.skull
 
-# ----------------------------------------------------------
-# Vanish System
-# ----------------------------------------------------------
 vanish:
   enabled: true
   permission: syntrix.vanish
@@ -219,9 +198,6 @@ vanish:
     permission: syntrix.vanish.auto
   suppress-join-quit: true
 
-# ----------------------------------------------------------
-# Join / Quit / First Join & Effekte
-# ----------------------------------------------------------
 welcome:
   enabled: true
   join: { enabled: true }
@@ -249,117 +225,31 @@ effects:
     offset: { x: 0.5, y: 0.5, z: 0.5 }
     speed: 0.02
 
-# ----------------------------------------------------------
-# JumpPads
-# ----------------------------------------------------------
 jumppads:
   enabled: true
   world: Lobby
   cooldown-ticks: 10
-
   triggers:
     use-pressure-plates: true
     materials: []
-
   velocity:
     use-look-direction: true
     horizontal: 1.2
     vertical: 1.0
     cap: 3.5
-
   particles:
     enabled: true
     type: CLOUD
     count: 20
     offset: { x: 0.2, y: 0.4, z: 0.2 }
     speed: 0.01
-    at: player             # 'player' oder 'plate'
-
+    at: player
   sound:
     enabled: true
     type: ENTITY_FIREWORK_ROCKET_LAUNCH
     volume: 0.6
     pitch: 1.4
 
-  message:
-    enabled: false
-    actionbar: true
-
-# ----------------------------------------------------------
-# Player Hider
-# ----------------------------------------------------------
-playerHider:
-  enabled: true
-  vip-permission: syntrix.vip
-  exempt-permission: syntrix.hider.exempt
-  default: ALL
-
-  item:
-    material: NETHER_STAR
-    slot: 7
-    cooldownMs: 300
-
-  gui:
-    filler:
-      enabled: true
-      pattern:
-        - "122222221"
-      map:
-        "1": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "2": { material: BLUE_STAINED_GLASS_PANE, name: "" }
-    sound:
-      open:   { enabled: true, type: UI_BUTTON_CLICK,        volume: 0.8, pitch: 1.2 }
-      select: { enabled: true, type: BLOCK_NOTE_BLOCK_BELL,  volume: 0.9, pitch: 1.5 }
-
-# ----------------------------------------------------------
-# Gadgets (Platzhalter; nur verwenden, wenn du die Implementierung hast)
-# ----------------------------------------------------------
-gadgets:
-  enabled: true
-  fixed-slots: { firework: 8, snowball: 0, hook: 2 }
-  cooldown:    { firework: 4000, snowball: 1500, hook: 1200 }
-  gui:
-    filler:
-      enabled: true
-      pattern: [ "123456789" ]
-      map:
-        "1": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "2": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "3": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "4": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "5": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "6": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "7": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "8": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-        "9": { material: GRAY_STAINED_GLASS_PANE, name: "" }
-    sound:
-      open:   { enabled: true, type: UI_BUTTON_CLICK,       volume: 0.8, pitch: 1.2 }
-      select: { enabled: true, type: BLOCK_NOTE_BLOCK_BELL, volume: 0.9, pitch: 1.5 }
-  use:
-    sound: { enabled: true, type: UI_BUTTON_CLICK, volume: 0.8, pitch: 1.0 }
-  hotbar:
-    firework: { material: FIREWORK_ROCKET }
-    snowball: { material: SNOWBALL }
-    hook:     { material: FISHING_ROD }
-  firework:
-    boost: 1.2
-    power: 1
-    color: AQUA
-    flicker: true
-    trail: true
-    sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-  snowball:
-    amount: 3
-    spread: 0.1
-    knockback: 1.1
-    sound: ENTITY_SNOWBALL_THROW
-  hook:
-    pull: { power: 1.4, maxY: 0.7 }
-  sound: ENTITY_FISHING_BOBBER_THROW
-
-# ----------------------------------------------------------
-# Items
-# ----------------------------------------------------------
 items:
   jumpAndRun:
     enabled: true
