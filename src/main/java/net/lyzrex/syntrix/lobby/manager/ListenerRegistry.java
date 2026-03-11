@@ -37,6 +37,8 @@ public final class ListenerRegistry {
         if (plugin.doubleJump() != null) pm.registerEvents(plugin.doubleJump(), plugin);
         pm.registerEvents(new HeightGuardListener(plugin), plugin);
         pm.registerEvents(new SignColorListener(plugin), plugin);
+        pm.registerEvents(new VipAreaListener(plugin), plugin);
+
 
         // --- Logging Listeners Direkt Registriert ---
 

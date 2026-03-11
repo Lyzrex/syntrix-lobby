@@ -29,12 +29,8 @@ public final class LobbyProtectionListener implements Listener {
     }
 
     private boolean bypass(Player player) {
-        if (player == null) {
-            return false;
-        }
-        if (!player.getPersistentDataContainer().has(SyntrixLobby.BUILD_MODE, PersistentDataType.BYTE)) {
-            return false;
-        }
+        if (player == null) return false;
+        if (!player.getPersistentDataContainer().has(SyntrixLobby.BUILD_MODE, PersistentDataType.BYTE)) return false;
         String perm = plugin.getConfig().getString("protections.bypass-permission", "syntrix.protections.bypass");
         return perm == null || perm.isBlank() || player.hasPermission(perm);
     }
@@ -42,16 +38,14 @@ public final class LobbyProtectionListener implements Listener {
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noBuild", true)) return;
-        Player p = e.getPlayer();
-        if (BuildCommand.hasBypass(p.getUniqueId()) || bypass(p)) return;
+        if (BuildCommand.hasBypass(e.getPlayer().getUniqueId()) || bypass(e.getPlayer())) return;
         e.setCancelled(true);
     }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent e) {
         if (!plugin.getConfig().getBoolean("flags.noBuild", true)) return;
-        Player p = e.getPlayer();
-        if (BuildCommand.hasBypass(p.getUniqueId()) || bypass(p)) return;
+        if (BuildCommand.hasBypass(e.getPlayer().getUniqueId()) || bypass(e.getPlayer())) return;
         e.setCancelled(true);
     }
 
@@ -72,45 +66,38 @@ public final class LobbyProtectionListener implements Listener {
     @EventHandler
     public void onEntityDamage(EntityDamageByEntityEvent e) {
         if (!(e.getEntity() instanceof Player)) return;
-
         boolean damagerIsPlayer = e.getDamager() instanceof Player;
-        boolean damagerProjectileFromPlayer =
-                (e.getDamager() instanceof Projectile proj) && (proj.getShooter() instanceof Player);
-
+        boolean damagerProjectileFromPlayer = (e.getDamager() instanceof Projectile proj) && (proj.getShooter() instanceof Player);
         if (damagerIsPlayer || damagerProjectileFromPlayer) {
-            Player attacker = damagerIsPlayer ? (Player) e.getDamager()
-                    : (Player) ((Projectile) e.getDamager()).getShooter();
-            if (!bypass(attacker)) {
-                e.setCancelled(true);
-            }
+            Player attacker = damagerIsPlayer ? (Player) e.getDamager() : (Player) ((Projectile) e.getDamager()).getShooter();
+            if (!bypass(attacker)) e.setCancelled(true);
         }
     }
 
     @EventHandler
-    public void onFall(EntityDamageEvent event) {
-        if (!(event.getEntity() instanceof Player player)) {
+    public void onDamage(EntityDamageEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+
+        // NEU: Unter Wasser kein Damage (Ertrinken verhindern)
+        if (event.getCause() == EntityDamageEvent.DamageCause.DROWNING) {
+            event.setCancelled(true);
             return;
         }
-        if (event.getCause() != EntityDamageEvent.DamageCause.FALL) {
-            return;
+
+        // Fallschaden verhindern
+        if (event.getCause() == EntityDamageEvent.DamageCause.FALL) {
+            if (!plugin.getConfig().getBoolean("protections.no-fall-damage", true)) return;
+            if (bypass(player)) return;
+            event.setCancelled(true);
+            player.setFallDistance(0.0F);
         }
-        if (!plugin.getConfig().getBoolean("protections.no-fall-damage", true)) {
-            return;
-        }
-        if (bypass(player)) {
-            return;
-        }
-        event.setCancelled(true);
-        player.setFallDistance(0.0F);
     }
 
     @EventHandler
     public void onFood(FoodLevelChangeEvent e) {
         if (!plugin.getConfig().getBoolean("protections.no-hunger", true)) return;
         if (e.getEntity() instanceof Player p) {
-            if (bypass(p)) {
-                return;
-            }
+            if (bypass(p)) return;
             if (e.getFoodLevel() < p.getFoodLevel()) {
                 e.setCancelled(true);
                 p.setFoodLevel(20);
@@ -123,49 +110,28 @@ public final class LobbyProtectionListener implements Listener {
     public void onInteract(PlayerInteractEvent e) {
         if (e.getClickedBlock() == null) return;
         Material type = e.getClickedBlock().getType();
-
-        if (bypass(e.getPlayer())) {
-            return;
-        }
+        if (bypass(e.getPlayer())) return;
 
         if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if (plugin.getConfig().getBoolean("protections.block-doors", true) && Tag.DOORS.isTagged(type)) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-trapdoors", true) && Tag.TRAPDOORS.isTagged(type)) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-fence-gates", true) && Tag.FENCE_GATES.isTagged(type)) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-hoppers", true) && type == Material.HOPPER) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-barrels", true) && type == Material.BARREL) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-flower-pots", true) && Tag.FLOWER_POTS.isTagged(type)) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-note-blocks", true) && type == Material.NOTE_BLOCK) {
-                e.setCancelled(true); return;
-            }
-            if (plugin.getConfig().getBoolean("protections.block-jukebox", true) && type == Material.JUKEBOX) {
-                e.setCancelled(true); return;
-            }
+            if (plugin.getConfig().getBoolean("protections.block-doors", true) && Tag.DOORS.isTagged(type)) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-trapdoors", true) && Tag.TRAPDOORS.isTagged(type)) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-fence-gates", true) && Tag.FENCE_GATES.isTagged(type)) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-hoppers", true) && type == Material.HOPPER) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-barrels", true) && type == Material.BARREL) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-flower-pots", true) && Tag.FLOWER_POTS.isTagged(type)) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-note-blocks", true) && type == Material.NOTE_BLOCK) { e.setCancelled(true); return; }
+            if (plugin.getConfig().getBoolean("protections.block-jukebox", true) && type == Material.JUKEBOX) { e.setCancelled(true); return; }
         }
 
-        if (e.getAction() == Action.PHYSICAL
-                && plugin.getConfig().getBoolean("protections.protect-farmland", true)
-                && type == Material.FARMLAND) {
+        if (e.getAction() == Action.PHYSICAL && plugin.getConfig().getBoolean("protections.protect-farmland", true) && type == Material.FARMLAND) {
             e.setCancelled(true);
         }
     }
 
-    // --- NEU: MOB SPAWNING VERHINDERN ---
+    // NEU: MOB SPAWNING VERHINDERN (Kühe, Zombies etc.)
     @EventHandler
     public void onMobSpawn(CreatureSpawnEvent e) {
-
+        // Erlaubt nur Spawns durch Plugins (Custom) wie z.B. NPCs oder Hologramme
         if (e.getSpawnReason() != CreatureSpawnEvent.SpawnReason.CUSTOM) {
             e.setCancelled(true);
         }

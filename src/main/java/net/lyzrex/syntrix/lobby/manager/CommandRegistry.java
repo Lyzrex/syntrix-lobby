@@ -23,6 +23,8 @@ public final class CommandRegistry {
         add(plugin, "stats", new StatsCommand(plugin));
         add(plugin, "verify", new VerifyCommand(plugin));
         add(plugin, "link", new VerifyCommand(plugin));
+        add(plugin, "viparea", new VipAreaCommand(plugin));
+        add(plugin, "lobbyaction", new LobbyActionCommand(plugin));
     }
 
     private static void add(SyntrixLobby plugin, String name, TabExecutor exec) {

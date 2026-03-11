@@ -36,6 +36,8 @@ commands:
   verify:
     description: Start the Discord verification process.
     usage: /verify <DiscordName>
-  link:
-    description: Complete the Discord verification with a code.
-    usage: /link <code>
+  lobbyaction:
+    description: Internal command for NPCs.
+  viparea:
+    description: Sets the corners for the VIP area.
+    permission: syntrix.admin

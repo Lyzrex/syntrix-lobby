@@ -1,7 +1,6 @@
 package net.lyzrex.syntrix.lobby.core;
 
 import net.lyzrex.syntrix.lobby.SyntrixLobby;
-import net.lyzrex.syntrix.lobby.utils.MessageUtil;
 import net.lyzrex.syntrix.lobby.utils.SoundUtil;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
@@ -17,16 +16,13 @@ import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 public final class DoubleJumpService implements Listener {
 
     private final SyntrixLobby plugin;
-    private final Map<UUID, Long> cooldownUntil = new HashMap<>();
     private final Set<UUID> temporarilyDisabled = new HashSet<>();
 
     public DoubleJumpService(@NotNull SyntrixLobby plugin) {
@@ -43,7 +39,6 @@ public final class DoubleJumpService implements Listener {
 
     public void disableForFlight(@NotNull Player player) {
         temporarilyDisabled.add(player.getUniqueId());
-        cooldownUntil.remove(player.getUniqueId());
     }
 
     public boolean isTemporarilyDisabled(@NotNull UUID uuid) {
@@ -86,12 +81,9 @@ public final class DoubleJumpService implements Listener {
         String perm = plugin.getConfig().getString("doublejump.permission", "syntrix.doublejump");
         return perm == null || perm.isBlank() || player.hasPermission(perm);
     }
+
     public boolean isPrimed(@NotNull Player player) {
         return canUse(player);
-    }
-
-    private double cooldownSeconds() {
-        return plugin.getConfig().getDouble("doublejump.cooldown-seconds", 1.0D);
     }
 
     private void playJumpSound(Player player) {
@@ -125,6 +117,7 @@ public final class DoubleJumpService implements Listener {
         if (!canUse(player)) {
             return;
         }
+        // Sobald der Spieler den Boden berührt, laden wir den DoubleJump (Flugmodus) wieder auf!
         if (player.isOnGround() && !player.getAllowFlight()) {
             player.setAllowFlight(true);
         }
@@ -133,7 +126,6 @@ public final class DoubleJumpService implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID id = event.getPlayer().getUniqueId();
-        cooldownUntil.remove(id);
         temporarilyDisabled.remove(id);
     }
 
@@ -158,23 +150,14 @@ public final class DoubleJumpService implements Listener {
         }
         event.setCancelled(true);
 
-        long now = System.currentTimeMillis();
-        long until = cooldownUntil.getOrDefault(player.getUniqueId(), 0L);
-        if (until > now) {
-            double left = (until - now) / 1000.0;
-            MessageUtil.sendCooldown(player, plugin, left);
-            return;
-        }
 
         player.setAllowFlight(false);
+
         var dir = player.getLocation().getDirection().normalize();
         double up = 0.55D;
         double forward = 1.10D;
         player.setVelocity(dir.multiply(forward).setY(up));
 
         playJumpSound(player);
-
-        long cooldownMillis = (long) Math.max(0, cooldownSeconds() * 1000.0);
-        cooldownUntil.put(player.getUniqueId(), now + cooldownMillis);
     }
 }

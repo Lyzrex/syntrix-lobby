@@ -134,8 +134,8 @@ doublejump:
   permission: ""
   cooldown-seconds: 1.0
   sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-  volume: 0.8
-  pitch: 1.2
+  volume: 5.8
+  pitch: 3.2
 
 fly:
   enabled: true
@@ -163,7 +163,7 @@ commands:
 timeControl:
   enabled: true
   world: ""
-  fixed-time: 1000
+  fixed-time: 18000
   intervalTicks: 200
   freeze: true
 
@@ -227,16 +227,17 @@ effects:
 
 jumppads:
   enabled: true
-  world: Lobby
+  world: "Lobby"
   cooldown-ticks: 10
   triggers:
-    use-pressure-plates: true
-    materials: []
+    use-pressure-plates: false
+    materials:
+      - LIGHT_WEIGHTED_PRESSURE_PLATE
   velocity:
     use-look-direction: true
-    horizontal: 1.2
-    vertical: 1.0
-    cap: 3.5
+    horizontal: 2.8
+    vertical: 1.5
+    cap: 5.0
   particles:
     enabled: true
     type: CLOUD
